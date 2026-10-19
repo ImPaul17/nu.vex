@@ -4,8 +4,10 @@
 `apps/web`. It uses the operating system's title bar, resize controls, and webview.
 The web application does not draw imitation window controls.
 
-This milestone provides the source scaffold and a locked Rust dependency graph.
-Native compilation and runtime behavior have **not** been verified. The initial
+This milestone provides the desktop source and a locked Rust dependency graph.
+Native compilation passed on Windows, Linux, and macOS in the
+[CI run for `6620201`](https://github.com/ImPaul17/nu.vex/actions/runs/39194068585).
+Native runtime behavior remains **unverified**. The initial
 `tauri info` inspection found WebView2 while Rust/Cargo and the Microsoft C++
 build tools/SDK were unavailable. A repository-local Rust/GNU toolchain was
 subsequently prepared for backend checks and desktop lockfile generation; it
@@ -64,8 +66,8 @@ dependency updates and use `--locked` for native builds.
 
 ## Native compilation CI
 
-The separate [desktop compile workflow](../.github/workflows/desktop.yml) is
-prepared for `windows-2022`, `ubuntu-24.04`, and `macos-15` hosted runners. It uses
+The separate [desktop compile workflow](../.github/workflows/desktop.yml) runs
+on `windows-2022`, `ubuntu-24.04`, and `macos-15` hosted runners. It uses
 Rust 1.99.1, explicitly selects the MSVC toolchain on Windows, installs Linux
 WebKit/GTK build prerequisites, checks Apple's command-line tools, and records
 the actual Rust host. Linux/macOS use the runner's native host without assuming
@@ -85,10 +87,21 @@ installers, and `--locked` is forwarded to Cargo; see the
 has read-only repository permissions and no release or artifact-upload step.
 It runs for relevant source/configuration changes and can be started manually.
 
-This CI definition has not yet produced a recorded successful native build.
-A future compile success will verify source compilation on that runner; it will
-not establish native window behavior, account/instance connectivity, packaging,
-signing, or update support. Runtime and distribution checks remain separate.
+The [run for commit `6620201`](https://github.com/ImPaul17/nu.vex/actions/runs/39194068585)
+completed successfully in all three jobs. The logs record the actual hosts and
+built release binaries:
+
+| Runner | Rust host reported by the job | Built binary |
+| --- | --- | --- |
+| `windows-2022` | `x86_64-pc-windows-msvc` | `target/release/nuvex-desktop.exe` |
+| `ubuntu-24.04` | `x86_64-unknown-linux-gnu` | `target/release/nuvex-desktop` |
+| `macos-15` | `aarch64-apple-darwin` | `target/release/nuvex-desktop` |
+
+Each used Rust 1.99.1 and Cargo's locked dependency graph. This verifies release
+compilation for those hosts; it does not establish native window behavior,
+account/instance connectivity, other CPU architectures, installers, signing,
+or update support. The workflow did not upload or publish those binaries.
+Runtime and distribution checks remain separate.
 
 ## Security boundary
 

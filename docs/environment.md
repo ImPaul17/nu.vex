@@ -6,7 +6,7 @@ Observed on Windows during the phase 0/1 milestone, 19 October 2026. This is an 
 
 The directory initially contained eight brand assets and no application code, package manifest, lockfile, or `.git` directory. Git was available as a command, but the folder was not initially an initialized repository. Original brand assets were preserved while an npm workspace was introduced. See [branding](branding.md) for asset identity, geometry, transparency, and font provenance.
 
-The milestone subsequently initialized a local Git repository on `main`, without committing, adding a remote, or publishing files.
+The initial milestone subsequently initialized a local Git repository on `main`, before source commits or publication. Source was later published to [ImPaul17/nu.vex](https://github.com/ImPaul17/nu.vex); the initial inventory below remains a record of the starting environment.
 
 | Tool | Observation | Consequence |
 | --- | --- | --- |
@@ -16,9 +16,11 @@ The milestone subsequently initialized a local Git repository on `main`, without
 | `rustc`, Cargo | Not found on the inspected `PATH` | Native Rust/Tauri compilation cannot be claimed from this inventory |
 | Docker | Not found on the inspected `PATH` | Container builds and Compose execution require separate verification |
 
-Not appearing on the initial `PATH` does not prove that software is absent from the entire machine. This initial assessment preceded the subsequent repository-local toolchain work. Rust/Cargo 1.99.1, rustup 1.29.1, a GNU Windows compiler, and PostgreSQL 17.11 were later prepared under ignored project-local paths. See [the local toolchain record](toolchain-local.md) for exact provenance, helpers, paths, and actual checks. No disassembler installation or global toolchain reassignment was required. Docker/Compose remains unverified.
+Not appearing on the initial `PATH` does not prove that software is absent from the entire machine. This initial assessment preceded the subsequent repository-local toolchain work. Rust/Cargo 1.99.1, rustup 1.29.1, a GNU Windows compiler, and PostgreSQL 17.11 were later prepared under ignored project-local paths. See [the local toolchain record](toolchain-local.md) for exact provenance, helpers, paths, and actual checks. No disassembler installation or global toolchain reassignment was required. Local WSL Docker execution remains blocked; a subsequent hosted Compose verification succeeded.
 
-A later isolated Docker verification attempt acquired official Engine 29.9.1, Compose 5.6.0, and Buildx 0.38.0 binaries for WSL. The Ubuntu host then failed to start even `/bin/true` with `Wsl/Service/CreateInstance/E_FAIL` (error 6, step 2), including after one bounded recovery attempt. No Docker daemon started, and no `compose config`, image build, or stack startup ran. This is an external host/runtime blocker, not a successful container check or an observed image-build failure. The native Windows PostgreSQL verification is separate and remains valid.
+A later isolated Docker verification attempt acquired official Engine 29.9.1, Compose 5.6.0, and Buildx 0.38.0 binaries for WSL. The Ubuntu host then failed to start even `/bin/true` with `Wsl/Service/CreateInstance/E_FAIL` (error 6, step 2), including after one bounded recovery attempt. No Docker daemon started, and no `compose config`, image build, or stack startup ran in that local attempt. This is an external host/runtime blocker, not an observed image-build failure. The native Windows PostgreSQL verification is separate and remains valid.
+
+The subsequent [hosted CI run for `4265617`](https://github.com/ImPaul17/nu.vex/actions/runs/39193292317) passed all four jobs, including actual container builds/startup, REST/restart acceptance, an 8-table new-database restore, and the then-current four-scenario browser suite through Nginx. The later [run for `c0f8cda`](https://github.com/ImPaul17/nu.vex/actions/runs/39193801672) passed all four jobs too, including five browser scenarios, controlled remote-origin CSP/bearer/WebSocket checks, and Nginx credential-redaction checks. This verifies a disposable HTTP loopback deployment, not an external HTTPS topology or a Tauri desktop runtime. See [current verification](verification-current.md) for subsequent receipts.
 
 ## Toolchain and dependency decisions
 

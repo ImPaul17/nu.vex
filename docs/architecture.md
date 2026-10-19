@@ -15,12 +15,12 @@ The [environment inventory](environment.md) records the actual Rea integration a
 | Location | Responsibility | Status |
 | --- | --- | --- |
 | `apps/web` | SvelteKit/Svelte 5 client, routes, reusable UI, instance connection | Current integration milestone |
-| `apps/desktop` | Tauri 2 wrapper and explicitly granted native capabilities | Scaffold; native build requires verification |
+| `apps/desktop` | Tauri 2 wrapper and explicitly granted native capabilities | Compiled on Windows/macOS/Linux; native networking, runtime, and packaging remain separate work |
 | `packages/core` | Framework-independent models, demo fixtures, validated theme data | Phase 1 |
 | `packages/tokens` | CSS variables, themes, density and glass foundations | Phase 1 |
 | `docs` | Design choices, roadmap, operational instructions | Phase 0/1 |
 | `apps/server` | Rust/Axum service with modules and SQL migrations | Phase 2 implementation; independent Cargo crate |
-| `infra` | Compose, explicit migrator, proxy and recovery helpers | Files implemented; Docker execution pending |
+| `infra` | Compose, explicit migrator, proxy and recovery helpers | Images, Compose, browser messaging, and recovery verified on Linux CI; production HTTPS remains a separate gate |
 
 Use npm workspaces with one JavaScript lockfile. The server is an independent Cargo workspace/crate; extract a broader Rust workspace if more Rust services need it. Extract more shared packages when they have a real second consumer.
 
@@ -53,7 +53,7 @@ Each instance owns its accounts, communities, and database. No central account p
 
 A corporate deployment means an independently operated nu.vex service and domain. Existing corporate identities need a separate OIDC/SSO integration; an arbitrary company's website is not an instance API. The production web container defaults to same-origin connections. A validated build-time `NUVEX_CONNECT_ORIGINS` list can permit selected external API/WebSocket origins; the destination must separately trust this frontend's exact origin. Scripts remain local. Native per-instance networking still requires a separate controlled transport design.
 
-The implemented server configuration uses `NUVEX_DATABASE_URL`, `NUVEX_BIND`, one exact `NUVEX_ALLOWED_ORIGIN`, and explicit boolean flags for insecure loopback development, registration, and startup migrations. Compose runs a separate `--migrate` service before the runtime, with automatic runtime migrations disabled. PostgreSQL advisory migration locking prevents concurrent migration application. Native migration/restart acceptance has passed; container deployment remains unverified. The [self-hosting guide](self-hosting.md) documents current operational files and defaults, and [current verification](verification-current.md) records the executed checks.
+The implemented server configuration uses `NUVEX_DATABASE_URL`, `NUVEX_BIND`, one exact `NUVEX_ALLOWED_ORIGIN`, and explicit boolean flags for insecure loopback development, registration, and startup migrations. Compose runs a separate `--migrate` service before the runtime, with automatic runtime migrations disabled. PostgreSQL advisory migration locking prevents concurrent migration application. Native and container migration/restart acceptance have passed. The [self-hosting guide](self-hosting.md) documents operational files and defaults, and [current verification](verification-current.md) records the executed checks and deployment limits.
 
 Suggested server modules are `identity`, `communities`, `channels`, `messages`, `permissions`, `events`, and `config`. Keep transport handlers thin; domain operations own authorization and transaction boundaries. A shared API schema should eventually generate or validate TypeScript wire types; the current demo models are not that schema.
 

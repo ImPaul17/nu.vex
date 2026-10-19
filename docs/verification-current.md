@@ -1,63 +1,53 @@
-# Real-instance milestone verification — 19 October 2026
+# Messaging alpha verification — 19 October 2026
 
-This record covers the transition from the initial frontend shell to a service-backed messaging client. Results below distinguish checks rerun after the latest frontend session/reconciliation corrections from earlier checks. They do not certify a production release. The [phase 0/1 record](verification.md) remains a separate historical snapshot.
+The messaging alpha has passed real service-backed verification. The release program source is the same as `6620201`; `2dced51` adds a security regression and its test configuration. A subsequent documentation-only commit records these results without changing application source. This verifies an early source release, not stable production support.
 
-## Latest frontend and infrastructure checks
+## Hosted receipts
 
-These checks passed after the client corrections for session epochs, stale history responses, deleted-message reconciliation, pagination generations, and WebSocket resynchronization/backoff:
+| Executed workflow | Source commit | Result |
+| --- | --- | --- |
+| [Messaging checks, run 39194668020](https://github.com/ImPaul17/nu.vex/actions/runs/39194668020) | `2dced51` | All 4 jobs passed: Windows web checks, Linux web checks, Rust/PostgreSQL instance, and Compose |
+| [Desktop compilation, run 39194068585](https://github.com/ImPaul17/nu.vex/actions/runs/39194068585) | `6620201` | All 3 native compilation jobs passed |
 
-| Check actually executed | Result |
+The application directories (`apps/web`, `apps/server`, `apps/desktop`, `packages`) were compared between these commits and are identical. Earlier complete runs at `4265617` and `c0f8cda` are additional receipts, rather than substitutes for the final messaging run.
+
+## Web, service, and database
+
+- Strict Svelte/TypeScript checks passed with 0 errors and 0 warnings.
+- 12 core tests and 7 infrastructure tests passed; the static production web build passed on Windows and Linux.
+- 5 demo scenarios passed in Chromium on Linux. Local Edge runs also checked the responsive shell, safe themes, font/brand loading, keyboard focus, and plain-text rendering.
+- 14 Rust tests, formatting, Clippy with warnings denied, and the locked server build passed on Linux.
+- All 11 REST/restart acceptance groups passed against real PostgreSQL, both natively and through the container stack.
+- The real-instance Chromium suite passed 6/6 in 32.0 seconds against the native backend and 6/6 in 21.5 seconds through built Nginx/Docker.
+
+The real-instance scenarios cover two real account sessions and bidirectional delivery, persistent history, login/logout, a memory-only remote bearer session, and reload behavior. Four regressions cover delayed history after deletion, stale responses after account switching, pagination across resync/reconnection, and recovery after an aborted reconnect bootstrap. A sixth security scenario inspects actual WebSocket frames: a message sent after membership revocation is absent before a later authorized control frame; logout then closes the stream without delivering later content. REST reads/writes are also denied after revocation.
+
+The reconnect helper explicitly closes API sockets only. Closing Vite's HMR socket had invalidated an intermediate local scenario; the corrected helper and final CI passed. An earlier local registration retest timed out while a web build ran concurrently; the cause was not established. The first hosted instance setup failed before Rust execution because of health-command quoting; the corrected and final workflows passed. Local validated browser runs used installed Edge; the default Playwright Chromium needs its separate installation.
+
+## Executed container deployment
+
+The Compose job built the actual pinned images, started PostgreSQL plus explicit migrations, ran the Rust API and unprivileged Nginx, and passed readiness checks. The API database role had no superuser, create-role, or create-database privileges.
+
+It verified restart persistence and a custom-format database backup restored into a new database. Fingerprints matched for all 8 tables and the source remained unchanged. The separate earlier native Windows PostgreSQL restore also matched all 8 tables.
+
+The built CSP preserved hashed local bootstrap scripts and permitted only the configured API/WebSocket origins. A CI-only second loopback binding on Nginx port 8081 exercised real cross-origin bearer authentication and bidirectional WebSocket delivery from the frontend on port 8080. The destination allowed the exact frontend origin. Synthetic unissued invitation/ticket values were absent from actual Nginx access/error logs.
+
+These runs used HTTP loopback with explicit development configuration. They do not verify a public HTTPS deployment, certificate renewal, or a company's identity provider. The original local WSL host still fails with `Wsl/Service/CreateInstance/E_FAIL`; no local Docker daemon started. The successful hosted Linux execution is a separate environment.
+
+## Native compilation
+
+| Runner host recorded in logs | Result |
 | --- | --- |
-| `npm run check` | 0 errors, 0 warnings; strict TypeScript checks passed |
-| `npm test` | 12 core unit tests passed |
-| `node --test infra/infra.test.mjs` | 3 infrastructure boundary tests passed |
-| `npm run build` | Static production frontend build passed; output `apps/web/build` |
-| `npm run test:instance` with installed Edge and `NUVEX_E2E_REMOTE_URL=http://127.0.0.1:3001` | Latest real-instance browser run passed: 4 tests in 20.7 seconds |
-| `npm run test:e2e` with installed Edge | Current demo browser run passed: 5 tests in 9.8 seconds |
+| Windows `x86_64-pc-windows-msvc` | Optimized release executable built with Rust 1.99.1 |
+| Linux `x86_64-unknown-linux-gnu` | Optimized release executable built with Rust 1.99.1 |
+| macOS `aarch64-apple-darwin` | Optimized release executable built with Rust 1.99.1 |
 
-The core suite covers client validation, demo models, and safe theme data. The infrastructure suite covers restore-name boundaries, dump metadata/hash validation, and generated script CSP. Neither suite substitutes for a running database, browser account flow, or container deployment.
+The workflow used locked npm/Cargo dependencies and `--no-bundle`. No installers or signed binaries were published. Native account transport/CSP, interactive runtime behavior, other architectures, clean installation, signing, and updates remain unverified. See [desktop documentation](desktop.md).
 
-## Native service and database evidence
+## Publication and remaining scope
 
-Verification used the repository-local Windows Rust/GNU toolchain and native PostgreSQL 17.11, documented in [the toolchain record](toolchain-local.md).
+Source is public in [ImPaul17/nu.vex](https://github.com/ImPaul17/nu.vex). Apache-2.0 was approved by the owner and applied with project/third-party notices; Geist fonts retain SIL OFL 1.1. CLI authentication used the system keyring; credentials and local datasets are excluded from Git. Private vulnerability reporting is enabled and [SECURITY.md](../SECURITY.md) links the actual form.
 
-| Check actually executed | Result and timing |
-| --- | --- |
-| Rust tests, formatting, Clippy, and server build | Earlier run passed: 14 tests, formatting/Clippy, and build; not represented as a fresh run after later frontend changes |
-| `npm run test:server` / `node scripts/verify-instance.mjs` | Final native REST/restart run passed all 11 acceptance groups |
-| `./scripts/dev-tools/verify-backup.ps1` | Earlier native custom-dump/new-database restore passed; fingerprints of 8 tables matched and the source was unchanged |
+Voice/video, screen sharing, direct messages, uploads, notifications, OIDC/SSO, mobile/PWA delivery, and plugin execution remain future milestones. Current member lists span joined communities and do not provide live presence. The explicit local demo is not service-backed data. Functional checks do not constitute a security audit or a stable production support commitment.
 
-The 11 REST acceptance groups cover:
-
-1. Reapplicable migrations and instance readiness.
-2. Real accounts using opaque bearer tokens and HttpOnly browser sessions.
-3. Missing/foreign-origin mutation denial.
-4. Idempotent invitation membership and owner-action permissions.
-5. Idempotent sends and prevention of deleted-message resurrection.
-6. Cursor pagination of 41 visible messages and history/message bounds.
-7. Browser/bearer logout revocation persisted in PostgreSQL.
-8. Process restart preserving accounts, permissions, revocations, and history.
-9. Membership removal immediately blocking reads/writes while retaining the account session.
-10. A bound on unconsumed realtime tickets per user.
-11. Bounded authentication request rates.
-
-The harness starts and restarts its own loopback server and retains uniquely prefixed synthetic records in a dedicated development/test database. It does not provide a full browser/WebSocket or external HTTPS deployment test. The native recovery check does not execute the Docker backup/restore helpers.
-
-## Latest real-instance browser verification
-
-The latest four-test instance suite passed using installed Microsoft Edge, the local real backend, and the Vite frontend. It exercised two real users with login, realtime delivery, independent sessions, and the configured remote-origin bearer flow. Bearer credentials were absent from browser local/session storage, and reloading that bearer client required login again.
-
-The other three scenarios exercised a delayed history response after realtime deletion, a delayed private workspace response after switching accounts, and pagination across history resynchronization/reconnection. These checks cover the concrete races corrected during this milestone; they are not a general network-fault or cross-browser certification. `npm run check` was repeated with the final four-test configuration and again reported 0 errors/0 warnings.
-
-The first retest timed out after 60 seconds during registration while a production web build was running concurrently. Repeating without a concurrent build passed all four tests without further source changes. The cause of the first timeout was not established. The demo suite was subsequently rerun in Edge and passed all 5 tests in 9.8 seconds; its earlier results remain in the [initial verification record](verification.md).
-
-## Deployment and publication boundary
-
-- The isolated WSL Docker attempt stopped before daemon startup: Ubuntu could not start even `/bin/true`, reporting `Wsl/Service/CreateInstance/E_FAIL`. No `docker compose config`, image build, Compose startup, or container recovery drill ran locally.
-- A dedicated disposable Compose CI job is prepared to build/start the real stack, reuse REST/restart checks, restore a new database, and run the browser suite through Nginx on port 8080. This source/configuration is not successful container execution. Record actual runner results after they exist.
-- Tauri source/configuration inspection and native backend builds do not verify a packaged desktop client, installers, signing, or macOS/Linux behavior.
-- GitHub CLI authentication as `ImPaul17` was verified using the system keyring. Source commit [`1b27096`](https://github.com/ImPaul17/nu.vex/commit/1b270963f75526b4c43a69b783dbd6c3af557e07) was pushed to the public repository, preserving its earlier README commit. Hosted [CI run 39193181647](https://github.com/ImPaul17/nu.vex/actions/runs/39193181647) started; its results must be assessed separately. No release downloads have been published.
-- Private vulnerability reporting was enabled and verified through GitHub's API (`enabled: true`); [SECURITY.md](../SECURITY.md) links the actual reporting form. This does not promise response deadlines or establish a security audit.
-- Apache-2.0 was approved and applied; this legal/project milestone is separate from deployment and release verification.
-
-See [release readiness](release-readiness.md) for remaining product work and [testing](testing.md) for reproducible commands and prerequisites.
+See [release readiness](release-readiness.md), [reproducible test commands](testing.md), and the separate [historical phase 0/1 verification](verification.md).

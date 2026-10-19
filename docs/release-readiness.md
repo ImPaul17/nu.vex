@@ -1,34 +1,32 @@
 # Release readiness
 
-Working ledger, 19 October 2026. The objective is a maintainable open-source communication product with real accounts, independently operated instances, public collaboration, and verified distribution. The existence of source files does not complete that objective. [Current verification](verification-current.md) separates the latest frontend rerun, earlier native checks, and checks awaiting repetition; phase 0/1 results are preserved in [historical verification](verification.md).
+Working ledger, 19 October 2026. nu.vex has a verified source alpha for real, self-hosted text messaging. The broader communication product remains under development. [Current verification](verification-current.md) records actual commands, runner receipts, and limits; the [initial frontend record](verification.md) is historical.
 
-| Area | Current state | Evidence required to complete the milestone |
+| Area | Verified now | Remaining work |
 | --- | --- | --- |
-| Original identity and local typography | Integrated in the initial shell; source copies/font notices recorded | Preserve hashes/provenance through builds |
-| Open-source license | **Approved: Apache-2.0**; official LICENSE and project NOTICE included | Keep package metadata and distribution notices consistent |
-| Frontend shell and safe themes | Latest session/reconciliation changes passed type checks (0 errors/0 warnings), 12 core tests, 3 infrastructure tests, the static build, 4 real-instance and 5 demo browser tests in Edge | Maintain accessibility/platform checks and execute the production deployment/browser workflow |
-| Real accounts and persistent messaging | Final native REST/restart run passed 11 groups; current browser run passed 4 tests including two users, real bearer login/reload behavior, and 3 race regressions | Verify hosted/Compose deployment and keep restart/recovery coverage current |
-| Permissions and membership | Native REST acceptance passed owner-action denials, membership removal, blocked reads/writes, and session revocation | Keep live-subscription/reconnect revocation coverage and hosted deployment checks current |
-| Self-hosting files | Dockerfiles, Compose, explicit migrator, proxy and operational helpers implemented; disposable Compose CI job prepared; local Docker attempt blocked before daemon start by WSL host failure | Actual image builds, Compose startup, recovery/browser acceptance, HTTPS and secrets checks on a working container host |
-| Database recovery | Native PostgreSQL custom dump/new-database restore passed with matching fingerprints of 8 tables and unchanged source; infrastructure boundary tests also passed | Execute the container helpers and Compose recovery drill; verify restored instance behavior |
-| Company deployments | Instance/domain configuration is the supported model | Deploy a company-owned instance with real local accounts and HTTPS |
-| Enterprise identity | OIDC/SSO is planned separately | Protocol design, identity-provider integration, account linking/group mapping and security tests |
-| GitHub collaboration/publication | Source commit `1b27096` pushed to the public [repository](https://github.com/ImPaul17/nu.vex); original README history preserved; private reporting enabled/verified; [first CI run](https://github.com/ImPaul17/nu.vex/actions/runs/39193181647) started | Resolve actual runner failures and record the final verified commit/results |
-| Desktop distribution | Source scaffold; repository-local Rust/GNU backend toolchain works, while Tauri release toolchain remains separate | Actual Windows/macOS/Linux desktop builds, clean install/runtime checks, icons, signing and updates |
-| Media and attachments | Planned | Real uploads, DMs, notification behavior, moderation, voice/video/screen-share/device tests |
-| Extensions and APIs | Planned | Versioned bot API/SDK, isolated plugin capability model, compatibility and revocation tests |
-| Mobile/PWA | Planned; responsive web shell is not a complete PWA/mobile app | Cache/security design and real platform-specific build/runtime checks |
-| Federation | Explicitly deferred | Written identity/trust/moderation/synchronization protocol before implementation |
-| Security support and stable release | Private [reporting route](../SECURITY.md) enabled and verified; pre-release without a security audit or production support claim | Supported-version/release policy, threat review and current dependency notices |
+| Identity and typography | Supplied assets integrated; original geometry/proportions preserved; local Geist with OFL notices | Maintain asset provenance and accessible visual review |
+| Open-source license | Owner approved Apache-2.0; LICENSE, NOTICE, package metadata, and font notices included | Preserve notices in distributions |
+| Web shell and themes | Strict types, 12 core tests, 7 infrastructure tests, static builds, and 5 demo browser scenarios passed | Broader browser/accessibility review and complete customization roadmap |
+| Real accounts and text messaging | 14 Rust tests, 11 REST/restart groups, and 6 real-instance browser scenarios passed on final CI | Continue compatibility, load, and upgrade testing |
+| Permissions and session revocation | REST denials and actual WebSocket frame isolation passed after membership removal and logout | Scoped rosters/live presence, moderation, and more granular roles |
+| Self-hosting | Actual Docker images/Compose/readiness, Nginx browser delivery, configured remote CSP/CORS, and credential-log redaction passed | Public HTTPS deployment/certificate lifecycle and administrative operations review |
+| Database recovery | Native and container custom-format restore into a new database passed; 8 table fingerprints matched and source remained unchanged | Production backup scheduling, retention, and operator recovery exercises |
+| Corporate deployments | Instance-owned accounts, independent domains, and explicit remote frontend trust are supported | Deploy on the operator's real infrastructure; existing corporate identity requires separate OIDC/SSO |
+| Public collaboration | Source pushed to [ImPaul17/nu.vex](https://github.com/ImPaul17/nu.vex), original README history preserved; private vulnerability reporting enabled | Contributor review, version/support policy, and ongoing maintenance |
+| Native source | Tauri release compilation passed on Windows x64/MSVC, Linux x64/GNU, and macOS ARM64 with locked dependencies | Native account transport/CSP, interactive runtime, installers, signing, updates, and other architectures |
+| Advanced communication | Planned and separated from implemented messaging | Direct messages, uploads, notifications, voice/video, screen sharing, and improved moderation |
+| Open ecosystem | Theme data validation exists; executable extensions are not loaded | Capability-based plugin SDK, bot API, mobile/PWA, and advanced customization |
+| Stable production support | Early alpha with a private reporting route and explicit limits | Security review, supported-version policy, HTTPS/operator validation, and upgrade compatibility |
+| Federation | Explicitly deferred | Written identity, trust, moderation, and synchronization protocol before implementation |
 
-The native server's earlier verification also passed 14 Rust tests, formatting, Clippy, and a build. Those results and the 8-table native restore are retained as earlier evidence, rather than being represented as newly executed after each frontend change. No Docker daemon started during the blocked WSL attempt, and no Compose run or hosted CI result is recorded yet.
+## Acceptance and receipts
 
-## Messaging MVP exit scenario
+The text-messaging milestone demonstrated two real users joining one instance community and exchanging persistent messages. Reconnect and stale-response cases passed; process restart retained history and revoked sessions; unauthorized REST operations and live subscriptions were denied. Container backup restoration matched the source database.
 
-Use two independent browser sessions and two real instance accounts. Create/join a community through the implemented membership flow, exchange messages in both directions, reconnect a dropped client without duplicate persisted sends, restart the service, and verify history. Deny unauthorized reads/writes/subscriptions, including after membership removal. Restore the database into a new isolated instance and repeat the checks.
+Final messaging [CI run 39194668020](https://github.com/ImPaul17/nu.vex/actions/runs/39194668020), source `2dced51`, passed all four jobs. Native [run 39194068585](https://github.com/ImPaul17/nu.vex/actions/runs/39194068585), source `6620201`, passed all three compilation jobs. Application source is identical between these commits; the later commit adds a security test and its configuration. A documentation-only commit records these receipts without rerunning unchanged application builds.
 
-This scenario must use service-backed data; the explicit local demo cannot satisfy it. API tests, screenshots, a static build, and a successful `tauri info` each provide narrower evidence. None proves the whole product complete.
+The local WSL failure remains an environment limitation and was not repaired by the hosted tests. Successful Docker execution occurred on the disposable Linux runner. The deployment tests used explicit HTTP loopback development mode, not a public HTTPS domain.
 
 ## Publication boundary
 
-Apache-2.0 approval permits applying that license now. It does not imply that a GitHub remote exists, that authenticated access has been obtained, that a push happened, or that releases were published. Record the actual repository URL and CI results only after those actions succeed. Do not invent release downloads or label unverified native packages as available.
+The alpha is a source distribution for early testing and collaboration. A source archive, successful native compilation, or a static web build does not establish a signed installer, validated native account access, or stable production support. Release downloads and tags must be verified in the repository's [Releases](https://github.com/ImPaul17/nu.vex/releases) before describing them as published.

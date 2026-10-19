@@ -35,9 +35,9 @@ npm run build
 
 `check` validates Svelte and TypeScript; `test` executes the automated unit suite; `build` creates the static production frontend. Review the actual output and report failures, warnings, and missing prerequisites. A frontend build does not verify Tauri, Docker, server security, or cross-platform installers.
 
-Run `npm run test:e2e` for frontend behavior changes after installing Chromium or selecting an existing supported browser. See the [testing guide](docs/testing.md) for setup, the Windows Edge option, current scenarios, and verification boundaries.
+Run `npm run test:e2e` for frontend demo behavior changes after installing Chromium or selecting an existing supported browser. For service or real-account client changes, run `npm run test:server` against a dedicated migrated test database and `npm run test:instance` against the running test instance. These checks create synthetic data; keep production databases separate. See the [testing guide](docs/testing.md) for prerequisites, the Windows Edge option, current scenarios, and verification boundaries.
 
-Test critical boundaries rather than reproducing component internals. Theme imports need invalid types, unexpected keys, excessive values, and malformed JSON coverage. Future backend tests must cover authentication, authorization, transaction boundaries, reconnect behavior, and duplicate sends against a real test database with migrations.
+Test critical boundaries rather than reproducing component internals. Theme imports need invalid types, unexpected keys, excessive values, and malformed JSON coverage. Maintain backend coverage for authentication, authorization, transaction boundaries, reconnect behavior, and duplicate sends against a real test database with migrations. Keep native and container verification results separate; the hosted [CI run for `c0f8cda`](https://github.com/ImPaul17/nu.vex/actions/runs/39193801672) passed its deployment snapshot, rather than automatically certifying later changes or desktop runtime behavior.
 
 For interface changes, manually verify:
 

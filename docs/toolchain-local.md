@@ -212,9 +212,21 @@ There was no global `wsl --shutdown`, Windows restart, filesystem deletion, or
 attempt to kill `vmmemWSL`.
 
 Consequently the daemon, Docker image builds, Compose startup, and container
-health checks were **not executed successfully**. CLI version output and static
-configuration checks do not establish a working container deployment. Native
-Windows Rust/PostgreSQL verification remains independent of this host problem.
+health checks were **not executed successfully in this local WSL attempt**.
+CLI version output and static configuration checks do not establish a working
+container deployment. Native Windows Rust/PostgreSQL verification remains
+independent of this host problem.
+
+A later [hosted CI run for commit `4265617`](https://github.com/ImPaul17/nu.vex/actions/runs/39193292317)
+passed all four jobs, including actual Compose builds/startup, REST/restart,
+new-database restore with 8 matching table fingerprints, and the then-current
+four-scenario browser suite through Nginx. The later [run for `c0f8cda`](https://github.com/ImPaul17/nu.vex/actions/runs/39193801672)
+also passed all four jobs, including all five browser scenarios, controlled
+remote-origin bearer/WebSocket access through Nginx, actual credential-redaction
+checks, and the 8-table container restore with an unchanged source. These HTTP
+loopback CI results do not repair or verify this local WSL daemon, establish an
+external HTTPS topology, or verify a native desktop runtime. See
+[current verification](verification-current.md) for subsequent results.
 
 Prepared helpers, which still require runtime verification after WSL is repaired:
 

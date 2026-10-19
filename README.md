@@ -2,7 +2,7 @@
 
 An independent communication platform being built for communities that want control over their own infrastructure. Original code and branding; no proprietary Discord code, private APIs, or assets.
 
-**Estado actual / Current status:** pre-release development of the real-instance messaging milestone. The repository includes the branded client, a Rust/Axum/PostgreSQL service, migrations, and self-hosting files. Frontend checks/build, native server acceptance, and recovery results are recorded in [current verification](docs/verification-current.md). Remaining deployment and publication work is tracked in [release readiness](docs/release-readiness.md).
+**Estado actual / Current status:** early messaging alpha. The repository includes the branded client, a Rust/Axum/PostgreSQL service, migrations, and a tested self-hosting stack. Actual frontend/server/browser/container and native compilation results are recorded in [current verification](docs/verification-current.md). Remaining production and product work is tracked in [release readiness](docs/release-readiness.md).
 
 ## Run locally
 
@@ -23,7 +23,7 @@ npm test
 npm run build
 ```
 
-The production web build is written to `apps/web/build`. Latest checks passed with 0 errors/0 warnings, 12 core tests, 3 infrastructure tests, a production build, and 4 real-instance plus 5 demo browser tests in Edge. Browser integration uses `npm run test:e2e` for the demo and `npm run test:instance` for real accounts; see [testing instructions](docs/testing.md) for setup and [the verification record](docs/verification-current.md) for each result's scope and timing.
+The production web build is written to `apps/web/build`. Verification covers strict types, core/infrastructure tests, real accounts and permissions, browser delivery/reconnection, and container recovery. Browser integration uses `npm run test:e2e` for the demo and `npm run test:instance` for real accounts. See [testing instructions](docs/testing.md) for setup and [the verification record](docs/verification-current.md) for actual results, commits, and limits.
 
 ## Client and instance modes
 
@@ -62,11 +62,11 @@ The Tauri scaffold shares the web frontend. It requires Rust/Cargo and the nativ
 npm run desktop:dev
 ```
 
-The initial environment did not expose Rust, Cargo, or Docker on `PATH`. A [repository-local Rust/GNU and PostgreSQL toolchain](docs/toolchain-local.md) subsequently verified the native backend. Tauri compilation, installers, signing, and Windows/macOS/Linux desktop runtime checks remain separate work; signed desktop packages are not yet available.
+The initial environment did not expose Rust, Cargo, or Docker on `PATH`. A [repository-local Rust/GNU and PostgreSQL toolchain](docs/toolchain-local.md) subsequently verified the native backend. [Native CI](https://github.com/ImPaul17/nu.vex/actions/runs/39194068585) compiled the Tauri source for Windows x64, Linux x64, and macOS ARM64. Native account transport/runtime checks, installers, and signing remain separate work; signed desktop packages are not yet available.
 
 ## Direction
 
-The current messaging milestone must demonstrate two real users on one instance exchanging messages that survive a service restart, including authorization and recovery checks. Native packaging and Docker server deployment are separate workflows. Federation requires a future protocol design.
+The current messaging milestone demonstrates two real users on one instance exchanging persistent messages, with authorization, reconnect, restart, and recovery checks. Native packaging and Docker server deployment are separate workflows. Federation requires a future protocol design.
 
 - [Architecture and decisions](docs/architecture.md)
 - [Initial environment and Rea inspection](docs/environment.md)

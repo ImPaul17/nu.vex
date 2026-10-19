@@ -1,6 +1,6 @@
 # Self-hosting a nu.vex instance
 
-The repository includes the Rust service, SQL migrations, static web client, and a Compose stack. Implementation and successful deployment are different milestones: an isolated Docker attempt was blocked before daemon startup by the WSL host failing to start, so image builds, Compose startup, and container backup/restore remain to be executed. A [dedicated CI job](testing.md#actual-compose-deployment-in-ci) is prepared to verify the real deployment and browser against Nginx; no hosted run is recorded yet. Check [release readiness](release-readiness.md) before treating this as a supported production release.
+The repository includes the Rust service, SQL migrations, static web client, and a Compose stack. Hosted [CI run 39193801672](https://github.com/ImPaul17/nu.vex/actions/runs/39193801672) successfully built and started the stack, exercised real API/browser messaging, tested the configured remote origin and credential-log redaction, and restored a database with matching fingerprints. The local WSL attempt remains blocked by its host startup failure; it is separate from this successful Linux runner. Check [release readiness](release-readiness.md) for the limits of this prerelease and remaining production checks.
 
 Accounts belong to the instance you operate. A company can host its own nu.vex server and domain, create local nu.vex accounts, and control its database. This does not authenticate an arbitrary company website or an existing identity-provider account. OIDC/enterprise SSO is a separate planned feature. No centrally operated nu.vex account service is required.
 
@@ -157,8 +157,8 @@ docker compose ps -a
 
 Review logs and readiness. A migration failure must keep traffic stopped. Schema downgrades are not assumed; rollback may require restoring a verified backup with a compatible earlier application version. Use `docker compose stop` to stop services while retaining data. Do not use volume-removal commands as an update or recovery shortcut.
 
-Base images are pinned by version and registry digest in the Dockerfiles/Compose file. Refresh them through a reviewed dependency update and rebuild; operating-system packages installed during the server build still follow the selected Debian repository's updates. The supplied tags/digests were inspected, but container execution has not yet been verified in this environment.
+Base images are pinned by version and registry digest in the Dockerfiles/Compose file. Refresh them through a reviewed dependency update and rebuild; operating-system packages installed during the server build still follow the selected Debian repository's updates. Container execution has been verified on the linked Linux CI runner; the original local WSL host remains unavailable.
 
 ## Release gate
 
-A supported self-hosting release still needs an executed image/Compose test, two-user messaging/restart tests, a restore drill, an HTTPS deployment test, reviewed registration/admin operations, a real security contact, and documented upgrade compatibility. Track those checks in [release readiness](release-readiness.md). Native desktop installers are a separate build and signing workflow.
+CI has exercised images/Compose, two-user messaging, service restart, and database restoration, and the private security-reporting route is enabled. Stable production support still requires an actual HTTPS deployment test, reviewed administration and registration operations, and documented upgrade compatibility. Track those checks in [release readiness](release-readiness.md). Native desktop installers are a separate build and signing workflow.
