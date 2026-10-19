@@ -2,7 +2,7 @@
 
 An independent communication platform being built for communities that want control over their own infrastructure. Original code and branding; no proprietary Discord code, private APIs, or assets.
 
-**Estado actual / Current status:** early messaging alpha. The repository includes the branded client, a Rust/Axum/PostgreSQL service, migrations, a tested self-hosting stack, and a restricted native instance transport. Actual frontend/server/browser/container, native compilation, and Linux native UI results are recorded in [current verification](docs/verification-current.md). Remaining production and product work is tracked in [release readiness](docs/release-readiness.md).
+**Estado actual / Current status:** early messaging alpha. The repository includes the branded client, a Rust/Axum/PostgreSQL service, migrations, a tested self-hosting stack, and a restricted native instance transport. Actual frontend/server/browser/container, native compilation, and Windows/Linux native UI results are recorded in [current verification](docs/verification-current.md). Remaining production and product work is tracked in [release readiness](docs/release-readiness.md).
 
 ## Run locally
 
@@ -62,7 +62,11 @@ The Tauri host shares the web frontend. It requires Rust/Cargo and the native pr
 npm run desktop:dev
 ```
 
-The [restricted Rust instance transport](docs/adr/0001-native-instance-transport.md) keeps bearer credentials in native memory and mediates known API/event operations. For source `2085138`, [release compilation passed on Windows x64, Linux x64, and macOS ARM64](https://github.com/ImPaul17/nu.vex/actions/runs/39197074767), and [eight Linux native UI groups passed](https://github.com/ImPaul17/nu.vex/actions/runs/39197074775) against two real PostgreSQL-backed instances, including messaging, reconnect, logout, refresh/nonce isolation, and IPC/CSP boundaries. The source was merged as `cb28e76` with an identical file snapshot. Installers, signing, public HTTPS validation, and Windows/macOS interactive runtime remain separate work. The [local toolchain notes](docs/toolchain-local.md) describe the original host limitations.
+The [restricted Rust instance transport](docs/adr/0001-native-instance-transport.md) keeps bearer credentials in native memory and mediates known API/event operations. [Release compilation passed on Windows x64, Linux x64, and macOS ARM64](https://github.com/ImPaul17/nu.vex/actions/runs/39197074767) for source `2085138`. For PR source `2ab127b`, [all eight native UI groups passed on both Windows and Linux](https://github.com/ImPaul17/nu.vex/actions/runs/39199859768) against two real PostgreSQL-backed instances, including messaging, reconnect, logout, refresh/nonce isolation, and IPC/CSP boundaries. Installers, signing, public HTTPS validation, and macOS interactive runtime remain separate work. The [local toolchain notes](docs/toolchain-local.md) describe the original host limitations.
+
+The Windows runtime job verified matching signed WebView2/EdgeDriver binaries,
+an isolated PostgreSQL cluster, and cleanup. See the [Windows test procedure](docs/desktop.md#windows-runtime-ci)
+for setup and artifact boundaries.
 
 ## Direction
 

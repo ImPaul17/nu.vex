@@ -6,10 +6,10 @@ The web application does not draw imitation window controls.
 
 This milestone provides the desktop source, a locked Rust dependency graph, and
 a restricted native instance transport. For source `2085138`,
-[release compilation passed on Windows, Linux, and macOS](https://github.com/ImPaul17/nu.vex/actions/runs/39197074767),
-and [real Linux debug UI acceptance passed](https://github.com/ImPaul17/nu.vex/actions/runs/39197074775).
-That PR source was merged into `main` as `cb28e76` with an identical file snapshot.
-Windows/macOS interactive runtime and public HTTPS remain unverified. The initial
+[release compilation passed on Windows, Linux, and macOS](https://github.com/ImPaul17/nu.vex/actions/runs/39197074767).
+For PR source `2ab127b`,
+[real Windows and Linux debug UI acceptance passed](https://github.com/ImPaul17/nu.vex/actions/runs/39199859768).
+macOS interactive runtime and public HTTPS remain unverified. The initial
 `tauri info` inspection found WebView2 while Rust/Cargo and the Microsoft C++
 build tools/SDK were unavailable. A repository-local Rust/GNU toolchain was
 subsequently prepared for backend checks and desktop lockfile generation; it
@@ -149,7 +149,7 @@ The global public Tauri API remains disabled. Follow the official
 [CSP guidance](https://v2.tauri.app/security/csp/); a native mediator still needs
 caller validation and does not eliminate the impact of compromised UI code.
 
-The new [Linux runtime workflow](../.github/workflows/desktop-runtime.yml) builds
+The Linux job in the [runtime workflow](../.github/workflows/desktop-runtime.yml) builds
 the real debug application, runs transport/adapter formatting, unit tests and
 Clippy, and launches `scripts/verify-desktop.mjs` through WebKitWebDriver,
 `tauri-driver` 2.1.0, and Xvfb. Node uses the real WebDriver protocol without a
@@ -160,12 +160,57 @@ UI login, instance changes, storage boundaries, a no-cors fetch rejected with an
 actual `connect-src` CSP violation, copyable theme JSON, and rejected IPC
 operations. See [testing](testing.md#linux-native-runtime-acceptance).
 
-The [Linux runtime run for `2085138`](https://github.com/ImPaul17/nu.vex/actions/runs/39197074775)
-passed formatting, ten pure Rust transport tests, Clippy, native/server builds,
-and all eight integrated UI groups. This includes a real document refresh,
+The [Linux runtime job for `2ab127b`](https://github.com/ImPaul17/nu.vex/actions/runs/39199859768/job/117890380448)
+passed formatting, ten pure Rust transport tests, two configuration regression
+tests, Clippy, native/server builds, and all eight integrated UI groups. This includes a real document refresh,
 rotated nonce, rejected old-document selection, and subsequent successful UI
-login. Windows/macOS runtime, production HTTPS, installers, signing, and updates
-remain separate from this Linux debug acceptance.
+login. Windows debug acceptance has its own receipt below. macOS runtime,
+production HTTPS, installers, signing, and updates remain separate.
+
+## Windows runtime CI
+
+The same [runtime workflow](../.github/workflows/desktop-runtime.yml) defines
+a separate `windows-2022` job using MSVC Rust 1.99.1, bundled debug assets, and
+the real WebView2 application. The [Windows job for PR source `2ab127b`](https://github.com/ImPaul17/nu.vex/actions/runs/39199859768/job/117890380201)
+passed both configuration regression tests and all eight real native UI groups.
+Its logs confirm Microsoft-signed WebView2/EdgeDriver **131.0.2903.86**, PostgreSQL
+17.11 startup with two restricted-role databases, and successful owned-cluster
+cleanup. These are Windows debug-runtime results, separate from release compilation.
+
+The job installs `tauri-driver` 2.1.0 into the disposable runner and uses
+[`windows-webdriver.ps1`](../scripts/ci/windows-webdriver.ps1) to find an already
+installed WebView2 runtime through Microsoft's registered runtime ID. It checks
+the executable's Microsoft Authenticode signature and file version, downloads
+the exact matching x64 EdgeDriver from Microsoft's versioned HTTPS endpoint,
+rejects redirects, and extracts only the expected executable. Driver signature,
+file version, and reported version must agree before it is used. It does not
+install/update WebView2. The selected runtime folder and explicit driver path
+are passed to the test process. This follows the
+[Microsoft WebView2 driver requirements](https://learn.microsoft.com/en-us/microsoft-edge/webview2/how-to/webdriver)
+and [Tauri's manual setup](https://v2.tauri.app/develop/tests/webdriver/manual-setup/).
+
+[`windows-postgres.ps1`](../scripts/ci/windows-postgres.ps1) creates a fresh
+PostgreSQL 17.11 cluster under its dedicated `RUNNER_TEMP` directory, binds only
+`127.0.0.1:55433`, and provisions two databases with a restricted application
+role. The EDB revision-5 archive is verified against the SHA-256 pin recorded in
+that helper before extraction/execution. This is a project integrity pin for an
+HTTPS acquisition, not an independent vendor signature. No Windows service is
+installed and existing cluster directories are never replaced.
+
+The helper generates separate administrative/application passwords, masks them
+in CI, restricts its files to the runner identity, and removes the bootstrap
+password file. Cleanup runs even after failure; it stops a recognized cluster
+only after checking its manifest, PID data/port, exact executable and `-D`
+argument, and the recorded control-binary hash. It never stops processes by
+name or deletes another database. Private database/process logs remain outside
+uploaded artifacts. The shared harness uploads only a redacted result summary
+and an eligible screenshot of synthetic workspace data.
+
+Both native jobs run `scripts/verify-desktop-config.test.mjs`. Its two regression
+cases use synthetic passwords to ensure malformed or identical database URLs
+fail before launching binaries without printing credentials. Both passed in the
+linked Windows and Linux jobs. macOS runtime,
+public HTTPS operations, installers, signing, and updates remain separate work.
 
 ## Branding and distribution
 

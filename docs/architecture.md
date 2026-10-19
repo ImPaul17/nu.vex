@@ -15,7 +15,7 @@ The [environment inventory](environment.md) records the actual Rea integration a
 | Location | Responsibility | Status |
 | --- | --- | --- |
 | `apps/web` | SvelteKit/Svelte 5 client, routes, reusable UI, instance connection | Current integration milestone |
-| `apps/desktop` | Tauri 2 host with a restricted Rust instance transport and explicit native capabilities | Release compilation passed on Windows/macOS/Linux; real Linux debug UI/instance acceptance passed; other runtime and distribution checks remain separate |
+| `apps/desktop` | Tauri 2 host with a restricted Rust instance transport and explicit native capabilities | Release compilation passed on Windows/macOS/Linux; real Windows/Linux debug UI/instance acceptance passed; macOS runtime and distribution checks remain separate |
 | `packages/core` | Framework-independent models, demo fixtures, validated theme data | Phase 1 |
 | `packages/tokens` | CSS variables, themes, density and glass foundations | Phase 1 |
 | `docs` | Design choices, roadmap, operational instructions | Phase 0/1 |
@@ -77,7 +77,7 @@ The accepted [native transport ADR](adr/0001-native-instance-transport.md) adds 
 
 Native requests do not invent a browser Origin. Originless mutations require explicit validated Bearer credentials without Cookie; login/registration additionally require JSON and explicit bearer transport. Native realtime tickets have a server-derived audience distinct from browser-origin tickets, and the native WebSocket carries only the short-lived ticket without Origin/Cookie/Authorization. Any present Origin must match exactly; empty/duplicate values cannot become the native absence case. Reverse proxies must preserve those headers or reject invalid input. Release native connections require HTTPS; debug builds permit HTTP loopback only.
 
-For PR source `2085138`, [messaging and deployment CI](https://github.com/ImPaul17/nu.vex/actions/runs/39197074771), [three-platform native compilation](https://github.com/ImPaul17/nu.vex/actions/runs/39197074767), and [Linux native UI acceptance](https://github.com/ImPaul17/nu.vex/actions/runs/39197074775) passed. That source was merged as `cb28e76` with an identical file snapshot. Linux acceptance used the real bundled debug binary, two independent PostgreSQL-backed instances, and all eight integrated groups, including refresh/nonce isolation. It does not establish public HTTPS, Windows/macOS interactive runtime, installers, signing, or updates; see [current verification](verification-current.md).
+For PR source `2085138`, [three-platform native compilation](https://github.com/ImPaul17/nu.vex/actions/runs/39197074767) passed. The unchanged application sources now also have [Windows and Linux native UI acceptance](https://github.com/ImPaul17/nu.vex/actions/runs/39199859768) and [messaging/deployment receipts](https://github.com/ImPaul17/nu.vex/actions/runs/39199859761) at test-source commit `2ab127b`, merged as `de858b6` with an identical snapshot. Both native jobs used real bundled debug binaries, two independent PostgreSQL-backed instances, and all eight integrated groups, including refresh/nonce isolation. This does not establish public HTTPS, macOS interactive runtime, installers, signing, or updates; see [current verification](verification-current.md).
 
 ### Customization and extensions
 

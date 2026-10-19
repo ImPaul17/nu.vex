@@ -127,7 +127,8 @@ The workflow supplies `NUVEX_DESKTOP_DATABASE_URL` and
 `NUVEX_DESKTOP_SECOND_DATABASE_URL` for dedicated loopback PostgreSQL databases.
 The script refuses missing/equal database configurations or occupied test ports.
 Optional `NUVEX_SERVER_BIN`, `NUVEX_DESKTOP_BIN`, and `NUVEX_TAURI_DRIVER_BIN`
-select already compiled/installed binaries. `NUVEX_DESKTOP_API_PORT` and
+select already compiled/installed binaries. `NUVEX_NATIVE_DRIVER_BIN` supplies
+an explicit native-driver path to `tauri-driver`. `NUVEX_DESKTOP_API_PORT` and
 `NUVEX_DESKTOP_DRIVER_PORT` change the two respective consecutive port pairs.
 It never installs native host prerequisites or runs against a production database
 implicitly. Synthetic test records remain; cleanup terminates only processes
@@ -143,16 +144,68 @@ dependencies, the Linux invocation is:
 xvfb-run -a --server-args='-screen 0 1600x1200x24' node scripts/verify-desktop.mjs
 ```
 
-The [Linux runtime run for `2085138`](https://github.com/ImPaul17/nu.vex/actions/runs/39197074775)
-passed native formatting, ten pure Rust transport tests, Clippy, native/server
-builds, and all eight real UI groups, including the document-refresh/nonce check.
+The [Linux runtime job for `2ab127b`](https://github.com/ImPaul17/nu.vex/actions/runs/39199859768/job/117890380448)
+passed native formatting, ten pure Rust transport tests, two configuration
+regression tests, Clippy, native/server builds, and all eight real UI groups,
+including the document-refresh/nonce check.
 The separate [three-platform release compilation](https://github.com/ImPaul17/nu.vex/actions/runs/39197074767)
-also passed. That source was merged as `cb28e76` with an identical file snapshot.
-Linux debug acceptance does not verify release HTTPS configuration,
-Windows/macOS runtime, installers, signing, or updates.
+passed for source `2085138`. Windows debug acceptance has its own receipt below;
+macOS runtime, release HTTPS configuration, installers, signing, and updates
+remain separate checks.
 See the [native transport ADR](adr/0001-native-instance-transport.md),
 [official manual driver setup](https://v2.tauri.app/develop/tests/webdriver/manual-setup/),
 and [official CI guide](https://v2.tauri.app/develop/tests/webdriver/ci/).
+
+## Windows native runtime acceptance
+
+The `windows` job in the same workflow builds real bundled debug assets with
+MSVC Rust 1.99.1 and reuses the eight-group harness, without mocked IPC or Vite.
+It requires Windows/WebView2 prerequisites on the runner. The
+[Windows job for PR source `2ab127b`](https://github.com/ImPaul17/nu.vex/actions/runs/39199859768/job/117890380201)
+passed both configuration regression tests and all eight real UI groups. The
+logs confirm signed WebView2/EdgeDriver **131.0.2903.86**, PostgreSQL 17.11 with
+two isolated databases and a restricted application role on port 55433, and
+successful owned-cluster shutdown. The [same run's Linux job](https://github.com/ImPaul17/nu.vex/actions/runs/39199859768/job/117890380448)
+also passed. The [messaging/deployment run](https://github.com/ImPaul17/nu.vex/actions/runs/39199859761)
+for that source passed all four jobs; these are PR receipts rather than claims
+about a later `main` execution.
+
+The job uses two helpers intended for a disposable runner:
+
+- [`windows-webdriver.ps1`](../scripts/ci/windows-webdriver.ps1) selects the
+  preinstalled registered WebView2 runtime, verifies its Microsoft signature
+  and version, and acquires its exact matching x64 EdgeDriver over HTTPS without
+  redirects. Only the expected ZIP entry is extracted; signature, file version,
+  and reported version are checked before use. The runtime is not installed or
+  updated by this job.
+- [`windows-postgres.ps1`](../scripts/ci/windows-postgres.ps1) initializes a new
+  PostgreSQL 17.11 cluster under `RUNNER_TEMP` on IPv4 loopback port 55433, with
+  two databases, a non-admin application role, random masked credentials, and
+  private file permissions. The EDB revision-5 ZIP must match the helper's
+  recorded SHA-256 before extraction/execution; that project pin is not a vendor
+  signature. Its always-run Stop step validates manifest/PID/executable/data
+  directory/port/control hash before stopping the owned cluster. It does not
+  replace existing clusters, install services, or use process-name cleanup.
+
+For a manually prepared Windows test environment, build the debug native/server
+binaries, supply the two explicit test database URLs and compatible driver paths
+described above, then run:
+
+```powershell
+node --test scripts/verify-desktop-config.test.mjs
+node scripts/verify-desktop.mjs
+```
+
+The configuration suite has two subprocess regression cases: malformed and
+identical database URLs must fail before any binary starts, without printing
+their synthetic password or either URL. The harness requires the actual bundled
+origin after the UI is ready: `http://tauri.localhost` on Windows and
+`tauri://localhost` on Linux. Default executable paths include `.exe` on Windows.
+Successful summaries record bounded browser/engine metadata, never credentials.
+Only the redacted JSON summary and an eligible synthetic-workspace PNG are
+uploaded; private helper/process logs and binaries are excluded. The Windows
+receipt establishes that specific debug-runner snapshot; macOS runtime,
+public HTTPS, installers, signing, and updates remain unverified.
 
 ## Manual interface review
 
