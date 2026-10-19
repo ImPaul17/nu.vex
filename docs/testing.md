@@ -81,7 +81,7 @@ The separate browser suite uses two real account sessions against the local serv
 npm run test:instance
 ```
 
-First run the migrated backend on `127.0.0.1:3001` with the exact allowed Vite origin, loopback development mode, and registration enabled as described in [self-hosting](self-hosting.md). The dedicated Playwright configuration starts/reuses the frontend and uses one worker. It creates synthetic accounts/communities/messages and is separate from the demo suite. The current source contains six scenarios: two-user messaging, delayed history/deletions, stale account workspace responses, pagination across resynchronization, retrying a failed reconnect reconciliation, and denying private WebSocket content after membership/session revocation. The earlier successful CI snapshots described below contained four (`4265617`) and five (`c0f8cda`) instance scenarios; the [new six-scenario pipeline](https://github.com/ImPaul17/nu.vex/actions/runs/39194668020) is still in progress at this update. Use `PLAYWRIGHT_CHANNEL=msedge` in PowerShell as above if selecting installed Edge. A successful REST run does not automatically prove this browser suite passed.
+First run the migrated backend on `127.0.0.1:3001` with the exact allowed Vite origin, loopback development mode, and registration enabled as described in [self-hosting](self-hosting.md). The dedicated Playwright configuration starts/reuses the frontend and uses one worker. It creates synthetic accounts/communities/messages and is separate from the demo suite. The current source contains six scenarios: two-user messaging, delayed history/deletions, stale account workspace responses, pagination across resynchronization, retrying a failed reconnect reconciliation, and denying private WebSocket content after membership/session revocation. The earlier successful CI snapshots described below contained four (`4265617`) and five (`c0f8cda`) instance scenarios. The [run for `2085138`](https://github.com/ImPaul17/nu.vex/actions/runs/39197074771) passed all six directly and through Compose, plus 18 server tests and 14 REST/WebSocket acceptance groups. This PR source was merged as `cb28e76` with an identical file snapshot. Use `PLAYWRIGHT_CHANNEL=msedge` in PowerShell as above if selecting installed Edge. A successful REST run does not automatically prove this browser suite passed.
 
 `NUVEX_E2E_REMOTE_URL` optionally selects an explicitly configured second API origin for the bearer-login browser scenario. The production web image permits same-origin connections by default. Remote origins require the explicit build-time `NUVEX_CONNECT_ORIGINS` allowlist and a matching backend allowed browser origin, as documented in [self-hosting](self-hosting.md#connecting-to-other-instances). Setting the test variable alone does not change the web CSP or server CORS policy.
 
@@ -93,9 +93,11 @@ The separate `compose` job in `.github/workflows/checks.yml` executes on an Ubun
 
 The job sets `NUVEX_E2E_BASE_URL=http://127.0.0.1:8080` for `npm run test:instance`. With this variable, Playwright uses the existing deployment and does **not** start Vite. The ephemeral CI override also publishes the same Nginx on loopback port 8081, builds the web image with `NUVEX_CONNECT_ORIGINS=http://127.0.0.1:8081`, and sets `NUVEX_E2E_REMOTE_URL` to that origin. The `c0f8cda` Compose run passed all five browser scenarios in 17.9 seconds, including the real remote-origin bearer/WebSocket flow through the production image's controlled CSP. This is HTTP loopback verification on a disposable runner; external HTTPS and an operator's real proxy topology require separate deployment checks. See [current verification](verification-current.md) for subsequent receipts and the separate native workflow.
 
+The subsequent [run for `2085138`](https://github.com/ImPaul17/nu.vex/actions/runs/39197074771) passed all four messaging/deployment jobs, including all six browser scenarios through Nginx, REST/WebSocket acceptance, invalid-Origin handling, and recovery. Empty or duplicate Origin values must remain invalid after proxying; native bearer access requires actual header absence. These results certify that PR snapshot, merged into `main` without file changes, rather than claiming later workflow executions have already passed.
+
 ## Linux native runtime acceptance
 
-The new `.github/workflows/desktop-runtime.yml` prepares a real Linux application
+The `.github/workflows/desktop-runtime.yml` prepares a real Linux application
 test, separate from both browser suites and the three-platform compilation job.
 It pins Rust 1.99.1 and `tauri-driver` 2.1.0, installs WebKitWebDriver/Xvfb on the
 disposable Ubuntu runner, and builds bundled frontend assets in the native debug
@@ -141,9 +143,13 @@ dependencies, the Linux invocation is:
 xvfb-run -a --server-args='-screen 0 1600x1200x24' node scripts/verify-desktop.mjs
 ```
 
-At this update the script/workflow are implementation awaiting execution, not a
-successful native runtime result. Linux debug acceptance does not verify release
-HTTPS configuration, Windows/macOS runtime, installers, signing, or updates.
+The [Linux runtime run for `2085138`](https://github.com/ImPaul17/nu.vex/actions/runs/39197074775)
+passed native formatting, ten pure Rust transport tests, Clippy, native/server
+builds, and all eight real UI groups, including the document-refresh/nonce check.
+The separate [three-platform release compilation](https://github.com/ImPaul17/nu.vex/actions/runs/39197074767)
+also passed. That source was merged as `cb28e76` with an identical file snapshot.
+Linux debug acceptance does not verify release HTTPS configuration,
+Windows/macOS runtime, installers, signing, or updates.
 See the [native transport ADR](adr/0001-native-instance-transport.md),
 [official manual driver setup](https://v2.tauri.app/develop/tests/webdriver/manual-setup/),
 and [official CI guide](https://v2.tauri.app/develop/tests/webdriver/ci/).

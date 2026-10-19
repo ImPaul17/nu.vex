@@ -5,10 +5,11 @@
 The web application does not draw imitation window controls.
 
 This milestone provides the desktop source, a locked Rust dependency graph, and
-a restricted native instance transport under implementation. Earlier native
-compilation passed on Windows, Linux, and macOS in the
-[CI run for `6620201`](https://github.com/ImPaul17/nu.vex/actions/runs/39194068585).
-The new transport's native runtime behavior remains **unverified**. The initial
+a restricted native instance transport. For source `2085138`,
+[release compilation passed on Windows, Linux, and macOS](https://github.com/ImPaul17/nu.vex/actions/runs/39197074767),
+and [real Linux debug UI acceptance passed](https://github.com/ImPaul17/nu.vex/actions/runs/39197074775).
+That PR source was merged into `main` as `cb28e76` with an identical file snapshot.
+Windows/macOS interactive runtime and public HTTPS remain unverified. The initial
 `tauri info` inspection found WebView2 while Rust/Cargo and the Microsoft C++
 build tools/SDK were unavailable. A repository-local Rust/GNU toolchain was
 subsequently prepared for backend checks and desktop lockfile generation; it
@@ -88,7 +89,7 @@ installers, and `--locked` is forwarded to Cargo; see the
 has read-only repository permissions and no release or artifact-upload step.
 It runs for relevant source/configuration changes and can be started manually.
 
-The [run for commit `6620201`](https://github.com/ImPaul17/nu.vex/actions/runs/39194068585)
+The [run for commit `2085138`](https://github.com/ImPaul17/nu.vex/actions/runs/39197074767)
 completed successfully in all three jobs. The logs record the actual hosts and
 built release binaries:
 
@@ -159,9 +160,12 @@ UI login, instance changes, storage boundaries, a no-cors fetch rejected with an
 actual `connect-src` CSP violation, copyable theme JSON, and rejected IPC
 operations. See [testing](testing.md#linux-native-runtime-acceptance).
 
-This workflow definition and test source are not a passed native runtime run.
-Runtime verification is pending, and Windows/macOS runtime, production HTTPS,
-installers, signing, and updates remain separate from Linux debug acceptance.
+The [Linux runtime run for `2085138`](https://github.com/ImPaul17/nu.vex/actions/runs/39197074775)
+passed formatting, ten pure Rust transport tests, Clippy, native/server builds,
+and all eight integrated UI groups. This includes a real document refresh,
+rotated nonce, rejected old-document selection, and subsequent successful UI
+login. Windows/macOS runtime, production HTTPS, installers, signing, and updates
+remain separate from this Linux debug acceptance.
 
 ## Branding and distribution
 

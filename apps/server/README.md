@@ -35,7 +35,9 @@ On other systems, supply the environment variables below and use the same Cargo 
 
 ## HTTP contract
 
-All application paths below have the prefix `/api/v1`. JSON uses camelCase. Errors have the form `{"error":{"code":"forbidden","message":"…"}}`; SQL errors are never returned to clients. Every mutation requires the exact configured `Origin`, including command-line clients and bearer requests.
+All application paths below have the prefix `/api/v1`. JSON uses camelCase. Errors have the form `{"error":{"code":"forbidden","message":"…"}}`; SQL errors are never returned to clients.
+
+Browser mutations require the exact configured `Origin`. Native/command-line clients may omit Origin and Cookie entirely: protected mutations then require an explicitly supplied, valid bearer credential; login/registration require JSON with `transport: "bearer"`. Do not fabricate a browser Origin. Any present Origin must match exactly; empty, `null`, malformed, duplicate, and foreign values are rejected even with a bearer credential. Keep `NUVEX_ALLOWED_ORIGIN` configured for the intended browser frontend.
 
 | Method and path | Body / response |
 | --- | --- |
@@ -54,13 +56,15 @@ All application paths below have the prefix `/api/v1`. JSON uses camelCase. Erro
 | `POST /channels/{id}/messages` | `{content,clientId}` → `{message}`; `clientId` is a UUID. |
 | `DELETE /channels/{channelId}/messages/{messageId}` | Delete your own message → `204`. |
 | `POST /events/ticket` | Authenticated → `{ticket}` for one WebSocket upgrade. |
-| `GET /events` | Authenticated WebSocket; optional `?ticket=…`; exact Origin required. |
+| `GET /events` | Authenticated WebSocket; optional `?ticket=…`; ticket audience determines the Origin policy below. |
 
 Health routes have no API prefix: `GET /health/live` and `GET /health/ready`. Readiness checks PostgreSQL with a three-second timeout.
 
 Authentication defaults to the host-only `nuvex_session` cookie: `HttpOnly`, `SameSite=Lax`, seven days, `Secure` in production. `transport: "bearer"` returns the same opaque credential as `accessToken` instead of setting a cookie. Send it as `Authorization: Bearer …`; browser clients must keep it in memory, never localStorage. PostgreSQL stores session hashes, not plaintext credentials.
 
-Browser WebSockets cannot set Authorization headers. Obtain a REST ticket, then connect to `/events?ticket=…`. Tickets expire after 30 seconds, are single-use, are bounded to 2048 globally/eight per account, and require a live session and the configured Origin. Cookie WebSocket authentication also works.
+Browser WebSockets cannot set Authorization headers. Obtain a REST ticket, then connect to `/events?ticket=…`. Tickets expire after 30 seconds, are single-use, are bounded to 2048 globally/eight per account, and require a live session. The server derives their audience from the authenticated ticket request: browser-origin tickets require the exact configured Origin on upgrade; originless-bearer tickets require no Origin or Cookie. These audiences cannot be interchanged. Native clients obtain their ticket with Bearer and no Origin/Cookie, then open a ticket-only WebSocket without Origin/Cookie/Authorization. Ticket upgrades reject an additional Authorization credential. Cookie or direct-bearer WebSocket authentication without a ticket retains the exact browser-Origin requirement.
+
+Reverse proxies must preserve original Origin headers, including empty/duplicate values, or reject invalid input themselves. Do not replace Origin with a configured value or strip an empty value into absence. The supplied Nginx proxy forwards the original headers rather than reconstructing them from `$http_origin`.
 
 Live presence is not implemented. Profile status marks only the current account as online and uses offline for other profiles; it is not a measurement of other users' activity. Profile role labels summarize shared communities. Authorization always checks the actual community membership/owner in PostgreSQL.
 
