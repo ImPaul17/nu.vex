@@ -90,6 +90,7 @@ The current messaging milestone demonstrates two real users on one instance exch
 - [Security reporting](SECURITY.md)
 - [Apache-2.0 license and contribution policy](docs/licensing.md)
 - [Third-party font notices](THIRD_PARTY_NOTICES.md)
+- [Native distribution notice collection and review](docs/native-notices.md)
 
 ## License
 

@@ -1,0 +1,87 @@
+name: nu.vex native notice candidates
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/desktop/**'
+      - 'apps/web/**'
+      - 'packages/**'
+      - 'package*.json'
+      - '.npmrc'
+      - '.cargo/**'
+      - 'LICENSE'
+      - 'NOTICE'
+      - 'scripts/*native*notic*.mjs'
+      - 'scripts/native-build-evidence*.mjs'
+      - 'scripts/native-notices-README.txt'
+      - 'scripts/*frontend*notic*.mjs'
+      - 'scripts/native-notices-README.txt'
+      - '.github/workflows/native-notices.yml'
+  pull_request:
+    paths:
+      - 'apps/desktop/**'
+      - 'apps/web/**'
+      - 'packages/**'
+      - 'package*.json'
+      - '.npmrc'
+      - '.cargo/**'
+      - 'LICENSE'
+      - 'NOTICE'
+      - 'scripts/*native*notic*.mjs'
+      - 'scripts/native-build-evidence*.mjs'
+      - 'scripts/native-notices-README.txt'
+      - 'scripts/*frontend*notic*.mjs'
+      - 'scripts/native-notices-README.txt'
+      - '.github/workflows/native-notices.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-notices-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    name: Windows release notice candidates (unreviewed)
+    runs-on: windows-2022
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      RUSTUP_TOOLCHAIN: '1.99.1-x86_64-pc-windows-msvc'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_TERM_COLOR: never
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.14.0'
+          cache: npm
+      - name: Install pinned MSVC Rust
+        run: rustup toolchain install 1.99.1-x86_64-pc-windows-msvc --profile minimal
+      - name: Install locked frontend dependencies
+        run: npx --yes npm@11.21.1 ci
+      - name: Verify evidence classification and exact notice-file regressions
+        run: node --test scripts/native-build-evidence.test.mjs scripts/native-notice-files.test.mjs
+      - name: Collect unreviewed notices from the actual Windows release build
+        # The collector runs the configured frontend build and Tauri --no-bundle.
+        # Raw Cargo metadata, diagnostics, manifests and binaries stay private.
+        run: node scripts/collect-native-notices.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-notice-candidates-windows-unreviewed
+          path: |
+            .cache/native-notices/*/candidate.json
+            .cache/native-notices/*/candidate-failure.json
+            .cache/native-notices/*/README.txt
+            .cache/native-notices/*/notices/**
+          # Only these explicit candidate/text paths, including upstream dotdirs.
+          # The sibling private/ directory is never selected.
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
