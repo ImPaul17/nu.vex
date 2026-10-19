@@ -62,11 +62,15 @@ The Tauri host shares the web frontend. It requires Rust/Cargo and the native pr
 npm run desktop:dev
 ```
 
-The [restricted Rust instance transport](docs/adr/0001-native-instance-transport.md) keeps bearer credentials in native memory and mediates known API/event operations. [Release compilation passed on Windows x64, Linux x64, and macOS ARM64](https://github.com/ImPaul17/nu.vex/actions/runs/39197074767) for source `2085138`. For PR source `2ab127b`, [all eight native UI groups passed on both Windows and Linux](https://github.com/ImPaul17/nu.vex/actions/runs/39199859768) against two real PostgreSQL-backed instances, including messaging, reconnect, logout, refresh/nonce isolation, and IPC/CSP boundaries. Installers, signing, public HTTPS validation, and macOS interactive runtime remain separate work. The [local toolchain notes](docs/toolchain-local.md) describe the original host limitations.
+The [restricted Rust instance transport](docs/adr/0001-native-instance-transport.md) keeps bearer credentials in native memory and mediates known API/event operations. At source `7f9f459`, [release compilation passed on Windows x64, Linux x64, and macOS ARM64](https://github.com/ImPaul17/nu.vex/actions/runs/39202625762), and [all eight native UI groups passed on Windows and Linux](https://github.com/ImPaul17/nu.vex/actions/runs/39202625822) against two real PostgreSQL-backed instances. A separate [production-policy TLS suite](https://github.com/ImPaul17/nu.vex/actions/runs/39202625770) passed fourteen HTTPS/WSS, certificate and redirect cases on each OS. Installers, signing, public-domain HTTPS operations and macOS interactive runtime remain separate work. The [local toolchain notes](docs/toolchain-local.md) describe the original host limitations.
 
 The Windows runtime job verified matching signed WebView2/EdgeDriver binaries,
 an isolated PostgreSQL cluster, and cleanup. See the [Windows test procedure](docs/desktop.md#windows-runtime-ci)
 for setup and artifact boundaries.
+
+Normal builds retain reviewed project/font/frontend-package notices and verify
+the final client inventory. See [third-party notices](THIRD_PARTY_NOTICES.md)
+for provenance and the remaining native-distribution review.
 
 ## Direction
 

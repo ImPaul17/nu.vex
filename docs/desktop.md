@@ -5,10 +5,9 @@
 The web application does not draw imitation window controls.
 
 This milestone provides the desktop source, a locked Rust dependency graph, and
-a restricted native instance transport. For source `2085138`,
-[release compilation passed on Windows, Linux, and macOS](https://github.com/ImPaul17/nu.vex/actions/runs/39197074767).
-For PR source `2ab127b`,
-[real Windows and Linux debug UI acceptance passed](https://github.com/ImPaul17/nu.vex/actions/runs/39199859768).
+a restricted native instance transport. For PR #3 source `7f9f459`,
+[release compilation passed on Windows, Linux, and macOS](https://github.com/ImPaul17/nu.vex/actions/runs/39202625762),
+and [real Windows and Linux debug UI acceptance passed](https://github.com/ImPaul17/nu.vex/actions/runs/39202625822).
 macOS interactive runtime and public HTTPS remain unverified. The initial
 `tauri info` inspection found WebView2 while Rust/Cargo and the Microsoft C++
 build tools/SDK were unavailable. A repository-local Rust/GNU toolchain was
@@ -89,7 +88,7 @@ installers, and `--locked` is forwarded to Cargo; see the
 has read-only repository permissions and no release or artifact-upload step.
 It runs for relevant source/configuration changes and can be started manually.
 
-The [run for commit `2085138`](https://github.com/ImPaul17/nu.vex/actions/runs/39197074767)
+The [run for commit `7f9f459`](https://github.com/ImPaul17/nu.vex/actions/runs/39202625762)
 completed successfully in all three jobs. The logs record the actual hosts and
 built release binaries:
 
@@ -160,22 +159,24 @@ UI login, instance changes, storage boundaries, a no-cors fetch rejected with an
 actual `connect-src` CSP violation, copyable theme JSON, and rejected IPC
 operations. See [testing](testing.md#linux-native-runtime-acceptance).
 
-The [Linux runtime job for `2ab127b`](https://github.com/ImPaul17/nu.vex/actions/runs/39199859768/job/117890380448)
+The [Linux runtime job for `7f9f459`](https://github.com/ImPaul17/nu.vex/actions/runs/39202625822/job/117898733280)
 passed formatting, ten pure Rust transport tests, two configuration regression
 tests, Clippy, native/server builds, and all eight integrated UI groups. This includes a real document refresh,
 rotated nonce, rejected old-document selection, and subsequent successful UI
 login. Windows debug acceptance has its own receipt below. macOS runtime,
-production HTTPS, installers, signing, and updates remain separate.
+public HTTPS deployment, installers, signing, and updates remain separate.
+The dedicated TLS integration test remains ignored in the ordinary Rust test
+command and has its own successful acceptance receipt below.
 
 ## Windows runtime CI
 
 The same [runtime workflow](../.github/workflows/desktop-runtime.yml) defines
 a separate `windows-2022` job using MSVC Rust 1.99.1, bundled debug assets, and
-the real WebView2 application. The [Windows job for PR source `2ab127b`](https://github.com/ImPaul17/nu.vex/actions/runs/39199859768/job/117890380201)
+the real WebView2 application. The [Windows job for PR source `7f9f459`](https://github.com/ImPaul17/nu.vex/actions/runs/39202625822/job/117898732935)
 passed both configuration regression tests and all eight real native UI groups.
-Its logs confirm Microsoft-signed WebView2/EdgeDriver **131.0.2903.86**, PostgreSQL
-17.11 startup with two restricted-role databases, and successful owned-cluster
-cleanup. These are Windows debug-runtime results, separate from release compilation.
+The [same source's Linux job](https://github.com/ImPaul17/nu.vex/actions/runs/39202625822/job/117898733280)
+also passed. These are bundled debug-runtime results, separate from release
+compilation and the production-policy TLS fixture.
 
 The job installs `tauri-driver` 2.1.0 into the disposable runner and uses
 [`windows-webdriver.ps1`](../scripts/ci/windows-webdriver.ps1) to find an already
@@ -212,6 +213,52 @@ fail before launching binaries without printing credentials. Both passed in the
 linked Windows and Linux jobs. macOS runtime,
 public HTTPS operations, installers, signing, and updates remain separate work.
 
+## Production-policy TLS acceptance
+
+The [native TLS workflow](../.github/workflows/native-tls.yml) and
+[test instructions](testing.md#production-policy-native-https-and-wss) add
+independent HTTPS/WSS acceptance for the actual Rust mediator on Windows/Linux.
+For source `7f9f459c12d98d9b0803fba40920ec3b32ce1b92`, the
+[Linux job](https://github.com/ImPaul17/nu.vex/actions/runs/39202625770/job/117898640823)
+and [Windows job](https://github.com/ImPaul17/nu.vex/actions/runs/39202625770/job/117898640951)
+both passed fourteen cases with TLS 1.3. It uses
+`Transport::new(false)`, so the same HTTPS-only policy used by release builds is
+tested without enabling debug HTTP or disabling certificate validation. The
+backend also runs with `NUVEX_INSECURE_DEV=false`. It does not require a webview
+or broaden the application's CSP or IPC permissions.
+
+The fourteen-case fixture includes real authenticated HTTPS/WSS messaging and
+reconnection, three password-bearing HTTPS certificate negatives, three WSS
+certificate negatives after valid HTTPS ticket issuance, 307/308 password,
+bearer and ticket redirect checks with zero destination TCP connections, and
+final logout. Existing OpenSSL 3 creates a private test CA and genuine expired,
+wrong-SAN and foreign-CA leaves; no host-clock change is used.
+
+Linux supplies the fixture CA only to the test process. Earlier Windows
+CurrentUser Root imports timed out after two minutes with both `X509Store.Add`
+and a `NO_UI` API, without establishing TLS acceptance or directly observing a
+consent dialog. The verified helper
+temporarily trusts its owned synthetic CA in **LocalMachine/Root** only on an
+administrator-verified, disposable GitHub-hosted Windows runner. This is a
+broader temporary trust scope for that runner's processes; it does not authorize
+local or self-hosted trust changes or modify policy/registry settings.
+
+A version-2 marker records the exact store, CI run ID, thumbprint and SHA-256
+before Add. Two-minute Add/Remove limits and postcondition checks bound the
+operations, and always-run cleanup removes only that owned entry. The Windows
+receipt passed both the reopened Add/hash check and Remove/absence check.
+Results upload only a redacted summary, never
+keys/certificates/private fixture files or logs.
+
+The successful receipts follow preliminary fixture failures in Ring-provider
+initialization, Node TLS socket error handling, and the Windows CurrentUser
+imports. Those failed runs are not passing evidence; details are in the
+[testing record](testing.md#production-policy-native-https-and-wss).
+Public domains and certificate lifecycle, corporate proxy/CA behavior, macOS
+runtime and signed distribution remain separate checks. The same source's
+bundled Windows/Linux UI and three-platform release compilation also passed,
+with their distinct receipts recorded above.
+
 ## Branding and distribution
 
 `src-tauri/icons/icon.png` is an unchanged copy of the supplied `logo-app.png`.
@@ -227,3 +274,13 @@ macOS `.icns` derivative and platform icon sizes from the same approved artwork,
 review the provisional `org.nuvex.desktop` application identifier, choose installer
 targets, and configure release signing and platform CI. Icon preparation follows
 the [official Tauri icon format guidance](https://v2.tauri.app/develop/icons/).
+
+The embedded frontend now carries exact project/font/package notices and a
+build-derived client inventory. Its six boundary tests and final static-copy
+verification run with every normal web/desktop build. See
+[third-party notices](../THIRD_PARTY_NOTICES.md); this does not complete the
+separate audit of Rust crates, platform runtimes or installer distributions.
+For the same `7f9f459` source, the
+[messaging/deployment run](https://github.com/ImPaul17/nu.vex/actions/runs/39202625795)
+passed all four jobs, including six frontend-notice boundary tests and an
+inventory of five rendered packages and eighteen JS/CSS assets.

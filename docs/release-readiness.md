@@ -6,6 +6,7 @@ Working ledger, 19 October 2026. nu.vex has a verified source alpha for real, se
 | --- | --- | --- |
 | Identity and typography | Supplied assets integrated; original geometry/proportions preserved; local Geist with OFL notices | Maintain asset provenance and accessible visual review |
 | Open-source license | Owner approved Apache-2.0; LICENSE, NOTICE, package metadata, and font notices included | Preserve notices in distributions |
+| Frontend distribution notices | Exact project/font/package copies and client-only Rollup inventory; hosted build passed six boundary tests and final-copy/hash validation for five rendered packages and eighteen JS/CSS assets | Native Rust/platform/installer notices require separate review |
 | Web shell and themes | Strict types, 12 core tests, 7 infrastructure tests, static builds, and 5 demo browser scenarios passed | Broader browser/accessibility review and complete customization roadmap |
 | Real accounts and text messaging | 18 Rust tests, 14 REST/WebSocket acceptance groups, and 6 real-instance browser scenarios passed on the merged PR source | Continue compatibility, load, and upgrade testing |
 | Permissions and session revocation | REST denials and actual WebSocket frame isolation passed after membership removal and logout | Scoped rosters/live presence, moderation, and more granular roles |
@@ -14,6 +15,7 @@ Working ledger, 19 October 2026. nu.vex has a verified source alpha for real, se
 | Corporate deployments | Instance-owned accounts, independent domains, and explicit remote frontend trust are supported | Deploy on the operator's real infrastructure; existing corporate identity requires separate OIDC/SSO |
 | Public collaboration | Source pushed to [ImPaul17/nu.vex](https://github.com/ImPaul17/nu.vex), original README history preserved; private vulnerability reporting enabled | Contributor review, version/support policy, and ongoing maintenance |
 | Native client | Restricted Rust instance transport; release compilation passed on Windows x64/MSVC, Linux x64/GNU, and macOS ARM64; 8 real debug UI groups passed on both Windows and Linux against two independent databases; 10 pure transport tests passed on Linux | macOS runtime, public HTTPS operations, corporate proxy/CA validation, persistent OS credentials, installers, signing, updates, and other architectures remain separate |
+| Native TLS | Fourteen real HTTPS/WSS cases passed on Windows and Linux with TLS 1.3, production transport policy and secure API mode; six certificate and six redirect negatives passed | Public-domain HTTPS/certificate lifecycle and corporate proxy/CA validation remain separate |
 | Advanced communication | Planned and separated from implemented messaging | Direct messages, uploads, notifications, voice/video, screen sharing, and improved moderation |
 | Open ecosystem | Theme data validation exists; executable extensions are not loaded | Capability-based plugin SDK, bot API, mobile/PWA, and advanced customization |
 | Stable production support | Early alpha with a private reporting route and explicit limits | Security review, supported-version policy, HTTPS/operator validation, and upgrade compatibility |
@@ -33,9 +35,40 @@ configuration regression cases on each platform. Windows used signed
 WebView2/EdgeDriver 131.0.2903.86 and PostgreSQL 17.11 with two isolated,
 restricted-role databases; its owned-cluster cleanup also passed. The separate
 [messaging/deployment run](https://github.com/ImPaul17/nu.vex/actions/runs/39199859761)
-passed all four jobs. These results certify the PR source, without claiming a
-new `main` run has completed. Procedure and limits are in
+passed all four jobs. Subsequent main-branch receipts are recorded in
+[current verification](verification-current.md). Procedure and limits are in
 [native testing](testing.md#windows-native-runtime-acceptance).
+
+For PR #3 source `7f9f459c12d98d9b0803fba40920ec3b32ce1b92`, the
+[native TLS run](https://github.com/ImPaul17/nu.vex/actions/runs/39202625770)
+passed both Windows and Linux jobs, each with fourteen cases and TLS 1.3.
+The positive flow used two actual WSS connections, reconnect, persistent history
+and logout. Six certificate negatives and six 307/308 redirect checks passed;
+redirect destinations received zero TCP connections or HTTP requests. Summaries
+record production transport policy enabled, API insecure development mode off,
+and no mocked TLS. The separate
+[messaging/deployment run](https://github.com/ImPaul17/nu.vex/actions/runs/39202625795)
+passed all four jobs, including the new frontend-distribution notice checks.
+The same source's [Windows/Linux native runtime run](https://github.com/ImPaul17/nu.vex/actions/runs/39202625822)
+passed both jobs, each with eight real UI groups and two configuration regression
+tests. Linux also passed formatting, Clippy and ten pure Rust transport tests;
+the separate TLS integration is ignored in that ordinary unit-test command.
+The same source's [release compilation](https://github.com/ImPaul17/nu.vex/actions/runs/39202625762)
+passed on Windows x64/MSVC, Linux x64/GNU and macOS ARM64. All eleven PR checks
+passed across messaging/deployment, native UI, native TLS and release compilation.
+The frontend changes affect the distributed assets/build and must not be
+treated as an identical application snapshot of the earlier alpha; the current
+receipts above establish this source's verification.
+See [PR #3](https://github.com/ImPaul17/nu.vex/pull/3),
+[TLS testing](testing.md#production-policy-native-https-and-wss), and
+[third-party notices](../THIRD_PARTY_NOTICES.md). No complete native dependency
+or installer-license audit is claimed by the frontend inventory.
+
+Windows temporarily trusted one owned CA in the disposable hosted runner's
+LocalMachine/Root store; import/hash and removal/absence checks passed. Linux
+used a process-local CA. Setup, ownership guards and preliminary fixture
+failures are recorded in [testing](testing.md#production-policy-native-https-and-wss).
+These fixtures do not establish a corporate CA or public HTTPS deployment.
 
 ## Publication boundary
 

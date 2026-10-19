@@ -14,6 +14,22 @@ npm run build
 
 The core suite covers message validation and length limits, local-message creation, seed references, theme round trips, allowed values/ranges, rejected fields and injection strings, malformed JSON, and the 16 KiB UTF-8 theme limit. These client unit tests do not verify the newer server authentication or PostgreSQL persistence implementation.
 
+`npm run build` also runs six frontend-notice boundary tests before Vite, then
+checks the final static output after the adapter completes. The build-only
+Rollup hook records actual client package evidence and final JS/CSS hashes in
+`licenses/frontend-inventory.json`; it skips SSR and publishes no application
+source paths. Reviewed installed license files must match their exact static
+and built copies. New unreviewed rendered packages/helpers, version/hash drift,
+unexpected public fields, missing assets and modified bundles fail the build.
+Use `node scripts/check-frontend-notices.mjs` to validate an existing build.
+See [third-party notices](../THIRD_PARTY_NOTICES.md) for provenance and the
+separate native-distribution audit boundary.
+
+For source `7f9f459`, the [messaging/deployment run](https://github.com/ImPaul17/nu.vex/actions/runs/39202625795)
+passed all four jobs. The frontend validation passed all six notice tests and
+recorded five rendered packages and eighteen JS/CSS assets. This validates the
+frontend inventory; it does not audit the full native dependency graph.
+
 For dependency changes, also inspect the resolved override and advisory report with the pinned manager:
 
 ```sh
@@ -81,7 +97,7 @@ The separate browser suite uses two real account sessions against the local serv
 npm run test:instance
 ```
 
-First run the migrated backend on `127.0.0.1:3001` with the exact allowed Vite origin, loopback development mode, and registration enabled as described in [self-hosting](self-hosting.md). The dedicated Playwright configuration starts/reuses the frontend and uses one worker. It creates synthetic accounts/communities/messages and is separate from the demo suite. The current source contains six scenarios: two-user messaging, delayed history/deletions, stale account workspace responses, pagination across resynchronization, retrying a failed reconnect reconciliation, and denying private WebSocket content after membership/session revocation. The earlier successful CI snapshots described below contained four (`4265617`) and five (`c0f8cda`) instance scenarios. The [run for `2085138`](https://github.com/ImPaul17/nu.vex/actions/runs/39197074771) passed all six directly and through Compose, plus 18 server tests and 14 REST/WebSocket acceptance groups. This PR source was merged as `cb28e76` with an identical file snapshot. Use `PLAYWRIGHT_CHANNEL=msedge` in PowerShell as above if selecting installed Edge. A successful REST run does not automatically prove this browser suite passed.
+First run the migrated backend on `127.0.0.1:3001` with the exact allowed Vite origin, loopback development mode, and registration enabled as described in [self-hosting](self-hosting.md). The dedicated Playwright configuration starts/reuses the frontend and uses one worker. It creates synthetic accounts/communities/messages and is separate from the demo suite. Its six scenarios cover two-user messaging, delayed history/deletions, stale account workspace responses, pagination across resynchronization, retrying a failed reconnect reconciliation, and denying private WebSocket content after membership/session revocation. The [run for `7f9f459`](https://github.com/ImPaul17/nu.vex/actions/runs/39202625795) passed all six directly and through Compose, plus 18 server tests and 14 REST/WebSocket acceptance groups. This source was merged as `683a874` with an identical complete tracked snapshot. Use `PLAYWRIGHT_CHANNEL=msedge` in PowerShell as above if selecting installed Edge. A successful REST run does not automatically prove this browser suite passed.
 
 `NUVEX_E2E_REMOTE_URL` optionally selects an explicitly configured second API origin for the bearer-login browser scenario. The production web image permits same-origin connections by default. Remote origins require the explicit build-time `NUVEX_CONNECT_ORIGINS` allowlist and a matching backend allowed browser origin, as documented in [self-hosting](self-hosting.md#connecting-to-other-instances). Setting the test variable alone does not change the web CSP or server CORS policy.
 
@@ -93,7 +109,7 @@ The separate `compose` job in `.github/workflows/checks.yml` executes on an Ubun
 
 The job sets `NUVEX_E2E_BASE_URL=http://127.0.0.1:8080` for `npm run test:instance`. With this variable, Playwright uses the existing deployment and does **not** start Vite. The ephemeral CI override also publishes the same Nginx on loopback port 8081, builds the web image with `NUVEX_CONNECT_ORIGINS=http://127.0.0.1:8081`, and sets `NUVEX_E2E_REMOTE_URL` to that origin. The `c0f8cda` Compose run passed all five browser scenarios in 17.9 seconds, including the real remote-origin bearer/WebSocket flow through the production image's controlled CSP. This is HTTP loopback verification on a disposable runner; external HTTPS and an operator's real proxy topology require separate deployment checks. See [current verification](verification-current.md) for subsequent receipts and the separate native workflow.
 
-The subsequent [run for `2085138`](https://github.com/ImPaul17/nu.vex/actions/runs/39197074771) passed all four messaging/deployment jobs, including all six browser scenarios through Nginx, REST/WebSocket acceptance, invalid-Origin handling, and recovery. Empty or duplicate Origin values must remain invalid after proxying; native bearer access requires actual header absence. These results certify that PR snapshot, merged into `main` without file changes, rather than claiming later workflow executions have already passed.
+The [run for `7f9f459`](https://github.com/ImPaul17/nu.vex/actions/runs/39202625795) passed all four messaging/deployment jobs, including all six browser scenarios through Nginx, REST/WebSocket acceptance, invalid-Origin handling and recovery. Empty or duplicate Origin values must remain invalid after proxying; native bearer access requires actual header absence. These receipts establish that tested source and its identical merge snapshot; later executions require their own completed results.
 
 ## Linux native runtime acceptance
 
@@ -144,13 +160,16 @@ dependencies, the Linux invocation is:
 xvfb-run -a --server-args='-screen 0 1600x1200x24' node scripts/verify-desktop.mjs
 ```
 
-The [Linux runtime job for `2ab127b`](https://github.com/ImPaul17/nu.vex/actions/runs/39199859768/job/117890380448)
+The [Linux runtime job for `7f9f459`](https://github.com/ImPaul17/nu.vex/actions/runs/39202625822/job/117898733280)
 passed native formatting, ten pure Rust transport tests, two configuration
 regression tests, Clippy, native/server builds, and all eight real UI groups,
-including the document-refresh/nonce check.
-The separate [three-platform release compilation](https://github.com/ImPaul17/nu.vex/actions/runs/39197074767)
-passed for source `2085138`. Windows debug acceptance has its own receipt below;
-macOS runtime, release HTTPS configuration, installers, signing, and updates
+including the document-refresh/nonce check. The dedicated TLS integration test
+is ignored by this ordinary Rust command; its explicit execution has the
+separate successful receipt below.
+The separate [three-platform release compilation](https://github.com/ImPaul17/nu.vex/actions/runs/39202625762)
+passed for the same `7f9f459` source on Windows x64/MSVC, Linux x64/GNU and
+macOS ARM64. Windows debug acceptance has its own receipt below;
+macOS runtime, public-domain HTTPS deployment, installers, signing, and updates
 remain separate checks.
 See the [native transport ADR](adr/0001-native-instance-transport.md),
 [official manual driver setup](https://v2.tauri.app/develop/tests/webdriver/manual-setup/),
@@ -161,14 +180,13 @@ and [official CI guide](https://v2.tauri.app/develop/tests/webdriver/ci/).
 The `windows` job in the same workflow builds real bundled debug assets with
 MSVC Rust 1.99.1 and reuses the eight-group harness, without mocked IPC or Vite.
 It requires Windows/WebView2 prerequisites on the runner. The
-[Windows job for PR source `2ab127b`](https://github.com/ImPaul17/nu.vex/actions/runs/39199859768/job/117890380201)
+[Windows job for PR source `7f9f459`](https://github.com/ImPaul17/nu.vex/actions/runs/39202625822/job/117898732935)
 passed both configuration regression tests and all eight real UI groups. The
-logs confirm signed WebView2/EdgeDriver **131.0.2903.86**, PostgreSQL 17.11 with
-two isolated databases and a restricted application role on port 55433, and
-successful owned-cluster shutdown. The [same run's Linux job](https://github.com/ImPaul17/nu.vex/actions/runs/39199859768/job/117890380448)
-also passed. The [messaging/deployment run](https://github.com/ImPaul17/nu.vex/actions/runs/39199859761)
-for that source passed all four jobs; these are PR receipts rather than claims
-about a later `main` execution.
+[same run's Linux job](https://github.com/ImPaul17/nu.vex/actions/runs/39202625822/job/117898733280)
+also passed. The [messaging/deployment run](https://github.com/ImPaul17/nu.vex/actions/runs/39202625795)
+for that source passed all four jobs. The separately linked release compilation
+passed all three platform jobs. These are PR receipts rather than claims about
+a later `main` execution.
 
 The job uses two helpers intended for a disposable runner:
 
@@ -206,6 +224,96 @@ Only the redacted JSON summary and an eligible synthetic-workspace PNG are
 uploaded; private helper/process logs and binaries are excluded. The Windows
 receipt establishes that specific debug-runner snapshot; macOS runtime,
 public HTTPS, installers, signing, and updates remain unverified.
+
+## Production-policy native HTTPS and WSS
+
+The separate [native TLS workflow](../.github/workflows/native-tls.yml) runs
+Windows/Linux tests of the actual `apps/desktop/transport` crate with
+`Transport::new(false)`. For PR #3 source
+`7f9f459c12d98d9b0803fba40920ec3b32ce1b92`, the
+[Linux job](https://github.com/ImPaul17/nu.vex/actions/runs/39202625770/job/117898640823)
+and [Windows job](https://github.com/ImPaul17/nu.vex/actions/runs/39202625770/job/117898640951)
+both passed all fourteen cases with negotiated TLS 1.3. Their summaries record
+`productionTransportPolicy: true`, `apiInsecureDev: false`, and `mockedTls: false`.
+See [current verification](verification-current.md) for later receipts. This
+uses the production transport policy even though Cargo compiles a test binary:
+HTTP loopback is rejected, TLS verification stays enabled, and redirect policy
+is unchanged. It is separate from the native UI suite's HTTP debug instances.
+
+The Node orchestrator [`verify-native-tls.mjs`](../scripts/verify-native-tls.mjs)
+starts only owned loopback TLS proxies, redirect sinks, and a real migrated
+PostgreSQL-backed API with `NUVEX_INSECURE_DEV=false`. The ignored Rust
+integration test runs explicitly against those fixtures; ordinary `cargo test`
+does not establish its acceptance. It contains fourteen cases:
+
+| Cases | What is checked |
+| --- | --- |
+| 1 valid HTTPS/WSS flow | Real registration/community/messages, two WSS connections, and committed history after reconnect; bearer stays out of caller DTOs |
+| 3 invalid HTTPS certificates | Foreign CA, expired leaf, and wrong SAN; each attempts password-bearing login but receives a TLS failure before any HTTP payload reaches the proxy/API |
+| 3 invalid WSS certificates | Ticket issuance first succeeds over valid HTTPS, then a separate new TLS handshake rejects the foreign/expired/wrong-SAN certificate before Upgrade or stream delivery |
+| 4 HTTPS redirects | Password POST and bearer GET reject 307 to a separate HTTPS origin and 308 to HTTP; the destination records zero TCP connections/requests |
+| 2 WSS redirects | Ticket-bearing 307 WSS and 308 WS destinations receive zero TCP connections/requests |
+| 1 final logout | The authenticated session still works after negative cases and explicit logout succeeds |
+
+[`tls-certificates.mjs prepare`](../scripts/ci/tls-certificates.mjs) uses an
+existing OpenSSL 3 executable to create a private synthetic CA, valid
+localhost/IP leaves and genuine invalid fixtures. Expired validity dates are
+set when signing; the host clock is not changed. The generator checks SANs,
+signatures and expected verification failures before writing its private
+manifest under a fresh `RUNNER_TEMP/nuvex-tls`. It does not install OpenSSL or
+modify a trust store. Windows first applies a private filesystem ACL using
+the helper's `Protect` action.
+
+Linux scopes `SSL_CERT_FILE` to the probe process and its Rust children. Cargo
+dependencies/test binaries are prepared before that override; the actual probe
+runs offline. For an already prepared Linux test host, provide a fresh absolute
+`RUNNER_TEMP`, an isolated loopback `NUVEX_TLS_DATABASE_URL`, Rust, the compiled
+server, and existing OpenSSL, then follow the workflow's sequence:
+
+```sh
+node scripts/ci/tls-certificates.mjs prepare
+cargo build --manifest-path apps/server/Cargo.toml --locked
+cargo test --manifest-path apps/desktop/transport/Cargo.toml --test tls --no-run --locked
+NUVEX_TLS_CERTIFICATES="$RUNNER_TEMP/nuvex-tls/fixture.json" \
+SSL_CERT_FILE="$RUNNER_TEMP/nuvex-tls/ca/cert.pem" \
+CARGO_NET_OFFLINE=true node scripts/verify-native-tls.mjs
+```
+
+Earlier hosted Windows attempts to import the fixture into CurrentUser/Root
+timed out after two minutes using both `X509Store.Add` and a `NO_UI` API. Those
+attempts did not establish TLS acceptance; no consent dialog was directly
+observed. The verified
+[`windows-tls-trust.ps1`](../scripts/ci/windows-tls-trust.ps1) instead uses
+**LocalMachine/Root** only on a disposable GitHub-hosted Windows runner, with
+an administrator check in addition to the hosted-runner guards. This grants
+temporary trust to other processes on that isolated runner, a broader scope
+than the Linux process-local CA override.
+
+The helper records a version-2 ownership marker containing the store, CI run
+ID, certificate thumbprint and SHA-256 before Add. It refuses ordinary hosts,
+self-hosted runners and adoption of pre-existing certificates. Add and Remove
+have two-minute limits and explicit postcondition checks; always-run cleanup
+removes only the matching owned CA. It does not change certificate policy or
+registry settings. Do not emulate hosted-runner flags to run trust actions
+locally. PostgreSQL cleanup is independent and also always runs. The linked
+Windows receipt passed the post-Add reopen/hash check and post-Remove absence
+check for its owned CA.
+
+Preliminary Linux candidates also failed before a valid receipt: first,
+the fixture constructed a reqwest control client before installing the Ring
+provider, producing `No rustls crypto provider is configured`. The fixture now
+initializes the actual transport first; production transport behavior was not
+changed by that ordering correction. A later candidate aborted on an unhandled
+`TLSSocket` `read ECONNRESET` in the Node fixture. Tracking upgraded sockets and
+TLS wrappers and handling their error events corrected fixture cleanup without
+changing the acceptance counters. Those failed runs are not counted as passing
+cases. The successful source and jobs above establish the fourteen-case result.
+
+Only the redacted JSON result, counters and negotiated TLS versions are
+uploaded. Keys, certificates, account/control fixtures and raw process logs
+remain private. This fixture acceptance is not an external production domain,
+real certificate renewal/deployment test, macOS runtime check, enterprise
+proxy/CA integration, installer, signing, update or complete security audit.
 
 ## Manual interface review
 
