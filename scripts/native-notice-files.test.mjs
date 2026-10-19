@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
-import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve, sep } from 'node:path';
 import test from 'node:test';
@@ -133,6 +133,27 @@ test('file and directory symbolic-link escapes are rejected without reading thei
       await assert.rejects(collect(), /symbolic links/);
     });
   }
+});
+
+test('alternate ordinary spellings of one root resolve to a single canonical identity', async (t) => {
+  await fixture(async ({ packageRoot, put, manifest, collect }) => {
+    await put('LICENSE', 'Terms\n');
+    await manifest();
+    const expected = await collect();
+    // Windows CI reaches the temporary directory through an 8.3 short name
+    // (C:\Users\RUNNER~1\...) and NTFS/APFS accept any path case, so the same
+    // ordinary directory has several valid spellings. None of them may be
+    // reported as a non-canonical root or change the collected result.
+    const spellings = new Set([await realpath(packageRoot), join(dirname(packageRoot), basename(packageRoot).toUpperCase())]);
+    let exercised = 0;
+    for (const spelling of spellings) {
+      if (spelling === packageRoot) continue;
+      try { await realpath(spelling); } catch { continue; }
+      assert.deepEqual(await collect({ packageRoot: spelling }), expected);
+      exercised += 1;
+    }
+    if (exercised === 0) t.skip('This host exposes no alternate spelling of the temporary package root.');
+  });
 });
 
 test('invalid UTF-8 and binary NUL are rejected while valid text remains byte-exact', async () => {

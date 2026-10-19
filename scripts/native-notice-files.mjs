@@ -41,8 +41,21 @@ async function ordinaryRoot(packageRoot) {
     check(info.isDirectory() && !info.isSymbolicLink(), 'Native package paths must not traverse symbolic links.');
     if (path === dirname(path)) break;
   }
+  // realpath expands symbolic links and junctions, and also respells Windows
+  // case and 8.3 short components: os.tmpdir() is C:\Users\RUNNER~1\... on
+  // hosted Windows images. Those spellings denote the identical directory, so
+  // the resolved root is compared by directory identity rather than by text.
+  // Every ancestor above was already required to be an ordinary directory, so
+  // a different identity can only mean the root changed while it was resolved.
   const canonical = await realpath(root);
-  check(resolve(canonical) === root, 'The native package root must be canonical.');
+  const requested = await lstat(root, { bigint: true });
+  const resolved = await lstat(canonical, { bigint: true });
+  // Node's Windows lstat reports dev=0 for both spellings; inode identity and
+  // timestamps remain comparable there, so the volume check stays POSIX-only.
+  check(resolved.isDirectory() && !resolved.isSymbolicLink() && resolved.ino === requested.ino
+    && resolved.birthtimeNs === requested.birthtimeNs
+    && (process.platform === 'win32' || resolved.dev === requested.dev),
+    'The native package root must be canonical.');
   return canonical;
 }
 async function readBounded(root, path, maximum) {
