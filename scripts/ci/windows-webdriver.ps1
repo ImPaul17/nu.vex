@@ -119,9 +119,13 @@ if ((Get-ExecutableVersion $driverBinary) -ne $runtime.Version) {
 }
 # Safe only after both signature and file-version checks have passed.
 $reportedVersion = (& $driverBinary --version | Out-String).Trim()
-if ($LASTEXITCODE -ne 0 -or $reportedVersion -notmatch ('^MSEdgeDriver ' + [regex]::Escape($version) + '(?:\s|$)')) {
-    throw 'The verified EdgeDriver executable did not report its expected version.'
+$driverExitCode = $LASTEXITCODE
+if ($driverExitCode -ne 0 -or $reportedVersion -notmatch ('^Microsoft Edge WebDriver ' + [regex]::Escape($version) + '(?:\s|$)')) {
+    $diagnostic = [regex]::Replace($reportedVersion, '[\x00-\x1f\x7f-\x9f]', ' ')
+    $diagnostic = $diagnostic.Substring(0, [Math]::Min(64, $diagnostic.Length))
+    throw "Verified EdgeDriver version mismatch (expected $version, exit $driverExitCode, reported '$diagnostic')."
 }
+Write-Host "Verified EdgeDriver CLI version $version (exit $driverExitCode)."
 
 $variables = @{
     NUVEX_NATIVE_DRIVER_BIN = $driverBinary

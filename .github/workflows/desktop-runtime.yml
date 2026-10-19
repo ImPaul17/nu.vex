@@ -154,6 +154,8 @@ jobs:
         run: npx --yes npm@11.21.1 ci
       - name: Validate native acceptance configuration diagnostics
         run: node --test scripts/verify-desktop-config.test.mjs
+      - name: Verify preinstalled WebView2 and matching Microsoft EdgeDriver
+        run: ./scripts/ci/windows-webdriver.ps1
       - name: Build real native debug application with bundled frontend
         working-directory: apps/desktop
         # Debug permits only loopback HTTP for the two disposable instances.
@@ -169,8 +171,6 @@ jobs:
           $driverBinary = Join-Path $driverRoot 'bin/tauri-driver.exe'
           if (-not (Test-Path -LiteralPath $driverBinary -PathType Leaf)) { throw 'tauri-driver binary is missing.' }
           "NUVEX_TAURI_DRIVER_BIN=$driverBinary" | Out-File -LiteralPath $env:GITHUB_ENV -Encoding utf8 -Append
-      - name: Verify preinstalled WebView2 and matching Microsoft EdgeDriver
-        run: ./scripts/ci/windows-webdriver.ps1
       - name: Start isolated native PostgreSQL and two application databases
         run: ./scripts/ci/windows-postgres.ps1 -Action Start -Port 55433
       - name: Exercise actual Windows application and real instances
