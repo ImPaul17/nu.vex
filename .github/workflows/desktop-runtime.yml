@@ -10,7 +10,8 @@ on:
       - 'packages/**'
       - 'package*.json'
       - '.npmrc'
-      - 'scripts/verify-desktop.mjs'
+      - 'scripts/verify-desktop*.mjs'
+      - 'scripts/ci/**'
       - '.github/workflows/desktop-runtime.yml'
   pull_request:
     paths:
@@ -20,7 +21,8 @@ on:
       - 'packages/**'
       - 'package*.json'
       - '.npmrc'
-      - 'scripts/verify-desktop.mjs'
+      - 'scripts/verify-desktop*.mjs'
+      - 'scripts/ci/**'
       - '.github/workflows/desktop-runtime.yml'
   workflow_dispatch:
 
@@ -76,6 +78,8 @@ jobs:
           cargo --version
       - name: Install locked frontend dependencies
         run: npx --yes npm@11.21.1 ci
+      - name: Validate native acceptance configuration diagnostics
+        run: node --test scripts/verify-desktop-config.test.mjs
       - name: Check native formatting
         run: |
           cargo fmt --manifest-path apps/desktop/src-tauri/Cargo.toml -- --check
@@ -114,6 +118,71 @@ jobs:
           name: native-linux-verification
           # Only bounded synthetic-workspace screenshots and redacted summaries.
           # Never upload raw process logs, database URLs, tokens, or native binaries.
+          path: |
+            .cache/verify-desktop/**/native.png
+            .cache/verify-desktop/**/result.json
+          if-no-files-found: ignore
+          retention-days: 7
+
+  windows:
+    name: Windows native UI and instance
+    runs-on: windows-2022
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      RUSTUP_TOOLCHAIN: '1.99.1-x86_64-pc-windows-msvc'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_TERM_COLOR: always
+      CARGO_TARGET_DIR: ${{ github.workspace }}/.cache/native-runtime-target
+      NUVEX_SERVER_BIN: ${{ github.workspace }}/.cache/native-runtime-target/debug/nuvex-server.exe
+      NUVEX_DESKTOP_BIN: ${{ github.workspace }}/.cache/native-runtime-target/debug/nuvex-desktop.exe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.14.0'
+          cache: npm
+      - name: Install pinned MSVC Rust toolchain
+        run: rustup toolchain install 1.99.1-x86_64-pc-windows-msvc --profile minimal
+      - name: Record actual native host
+        run: |
+          rustc --version --verbose
+          cargo --version
+      - name: Install locked frontend dependencies
+        run: npx --yes npm@11.21.1 ci
+      - name: Validate native acceptance configuration diagnostics
+        run: node --test scripts/verify-desktop-config.test.mjs
+      - name: Build real native debug application with bundled frontend
+        working-directory: apps/desktop
+        # Debug permits only loopback HTTP for the two disposable instances.
+        # Build embeds the production web assets; this does not start Vite.
+        run: node ../../node_modules/@tauri-apps/cli/tauri.js build --debug --ci --no-bundle -- --locked
+      - name: Build real instance service
+        run: cargo build --manifest-path apps/server/Cargo.toml --locked
+      - name: Install pinned external native driver into the disposable runner
+        run: |
+          $driverRoot = Join-Path $env:RUNNER_TEMP 'nuvex-native-driver'
+          cargo install tauri-driver --version 2.1.0 --locked --root $driverRoot
+          if ($LASTEXITCODE -ne 0) { throw 'tauri-driver installation failed.' }
+          $driverBinary = Join-Path $driverRoot 'bin/tauri-driver.exe'
+          if (-not (Test-Path -LiteralPath $driverBinary -PathType Leaf)) { throw 'tauri-driver binary is missing.' }
+          "NUVEX_TAURI_DRIVER_BIN=$driverBinary" | Out-File -LiteralPath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Verify preinstalled WebView2 and matching Microsoft EdgeDriver
+        run: ./scripts/ci/windows-webdriver.ps1
+      - name: Start isolated native PostgreSQL and two application databases
+        run: ./scripts/ci/windows-postgres.ps1 -Action Start -Port 55433
+      - name: Exercise actual Windows application and real instances
+        run: node scripts/verify-desktop.mjs
+      - name: Stop only the owned PostgreSQL cluster
+        if: always()
+        run: ./scripts/ci/windows-postgres.ps1 -Action Stop -Port 55433
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-windows-verification
+          # No installers, native binaries, database URLs or private process logs.
           path: |
             .cache/verify-desktop/**/native.png
             .cache/verify-desktop/**/result.json

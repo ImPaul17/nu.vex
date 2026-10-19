@@ -1,4 +1,5 @@
-// Real Linux Tauri/WebKit UI acceptance. Requires compiled binaries and two isolated PostgreSQL databases.
+// Real Linux/WebKit and Windows/WebView2 Tauri UI acceptance.
+// Requires compiled binaries, a compatible native driver, and two isolated PostgreSQL databases.
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { randomBytes, randomUUID } from 'node:crypto';
@@ -14,6 +15,8 @@ const { parseTheme } = await tsImport('../packages/core/src/themes.ts', import.m
 
 process.umask(0o077);
 const root = resolve(import.meta.dirname, '..');
+assert.ok(['linux', 'win32'].includes(process.platform), 'Native acceptance currently supports Linux and Windows.');
+const executableSuffix = process.platform === 'win32' ? '.exe' : '';
 const runId = randomUUID();
 const prefix = `native_${runId.replaceAll('-', '').slice(0, 12)}`;
 const output = resolve(root, '.cache/verify-desktop', runId);
@@ -25,14 +28,17 @@ const bases = [`http://127.0.0.1:${apiPort}`, `http://127.0.0.1:${apiPort + 1}`]
 const databases = [process.env.NUVEX_DESKTOP_DATABASE_URL, process.env.NUVEX_DESKTOP_SECOND_DATABASE_URL];
 for (const value of databases) {
   assert.ok(value, 'Provide two explicit isolated NUVEX_DESKTOP_*DATABASE_URL values.');
-  const url = new URL(value);
+  let url;
+  try { url = new URL(value); }
+  catch { throw new Error('Native acceptance database URL is invalid.'); }
   assert.ok(['postgres:', 'postgresql:'].includes(url.protocol), 'Expected PostgreSQL test databases.');
   assert.ok(['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname), 'This acceptance requires loopback test databases.');
 }
-assert.notEqual(databases[0], databases[1], 'Instance-isolation acceptance requires distinct databases.');
-const serverBinary = resolve(process.env.NUVEX_SERVER_BIN ?? `${root}/apps/server/target/debug/nuvex-server`);
-const appBinary = resolve(process.env.NUVEX_DESKTOP_BIN ?? `${root}/apps/desktop/src-tauri/target/debug/nuvex-desktop`);
-const driverBinary = process.env.NUVEX_TAURI_DRIVER_BIN ?? 'tauri-driver';
+assert.ok(databases[0] !== databases[1], 'Instance-isolation acceptance requires distinct databases.');
+const serverBinary = resolve(process.env.NUVEX_SERVER_BIN ?? `${root}/apps/server/target/debug/nuvex-server${executableSuffix}`);
+const appBinary = resolve(process.env.NUVEX_DESKTOP_BIN ?? `${root}/apps/desktop/src-tauri/target/debug/nuvex-desktop${executableSuffix}`);
+const driverBinary = process.env.NUVEX_TAURI_DRIVER_BIN ?? `tauri-driver${executableSuffix}`;
+const nativeDriverBinary = process.env.NUVEX_NATIVE_DRIVER_BIN;
 const children = new Set();
 const logStreams = [];
 const secrets = new Set(databases);
@@ -40,6 +46,7 @@ const checks = [];
 const apis = [null, null];
 let driver;
 let session;
+let engine = {};
 let peerSocket;
 let expired = false;
 const watchdog = setTimeout(() => {
@@ -171,10 +178,15 @@ async function safeDiagnostic() {
 async function openApp() {
   const created = await command('/session', { capabilities: { alwaysMatch: { 'tauri:options': { application: appBinary } } } });
   assert.ok(created.sessionId, 'Driver did not create a native application session.'); session = created.sessionId;
+  engine = Object.fromEntries(['browserName', 'browserVersion', 'platformName']
+    .filter((key) => typeof created.capabilities?.[key] === 'string')
+    .map((key) => [key, created.capabilities[key].slice(0, 128)]));
   await inSession('/timeouts', { implicit: 0, script: 15_000, pageLoad: 30_000 });
-  const url = await inSession('/url');
-  assert.ok(!url.startsWith('http://127.0.0.1:5173') && !url.startsWith('http://localhost:5173'), 'Acceptance must load bundled assets, not Vite.');
   await waitFor(async () => await has('#instance-url') || await has('.instance-chip'), 'Native connection UI', 35_000);
+  const url = new URL(await inSession('/url'));
+  assert.equal(url.protocol, process.platform === 'win32' ? 'http:' : 'tauri:', 'Acceptance must load bundled assets.');
+  assert.equal(url.hostname, process.platform === 'win32' ? 'tauri.localhost' : 'localhost', 'Unexpected bundled app host.');
+  assert.equal(url.port, '', 'The native application must not load a development server.');
 }
 async function closeApp() { if (session) { const own = session; session = undefined; await command(`/session/${own}`, undefined, 'DELETE'); } }
 async function selectInstance(index) {
@@ -212,9 +224,12 @@ const uiPassword = remember(`Native-${randomBytes(24).toString('base64url')}`);
 try {
   await mkdir(output, { recursive: true, mode: 0o700 });
   await access(serverBinary); await access(appBinary);
+  if (nativeDriverBinary) await access(nativeDriverBinary);
   await startApi(0, true); await startApi(1, true);
   await freePort(driverPort); await freePort(driverPort + 1);
-  driver = startOwned(driverBinary, ['--port', String(driverPort), '--native-port', String(driverPort + 1)], {}, 'driver');
+  const driverArgs = ['--port', String(driverPort), '--native-port', String(driverPort + 1)];
+  if (nativeDriverBinary) driverArgs.push('--native-driver', resolve(nativeDriverBinary));
+  driver = startOwned(driverBinary, driverArgs, {}, 'driver');
   await waitFor(async () => {
     if (driver.nuvexSpawnError) throw driver.nuvexSpawnError;
     assert.equal(driver.exitCode, null, 'Native WebDriver exited before readiness.');
@@ -330,7 +345,7 @@ try {
   assert.deepEqual(boundary, { stale: true, route: true, windowPermission: true, noToken: true }, 'Real IPC must reject stale handles, unknown routes, and ungranted window commands, and hide authentication tokens.');
   passed('actual IPC enforces generation/route/window boundaries and strips bearer tokens from authentication DTOs');
 
-  await writeFile(resolve(output, 'result.json'), JSON.stringify({ ok: true, runId, checks, platform: process.platform, appBinary, apiOrigins: bases, nativeWebDriver: true, mockedIpc: false }, null, 2), { mode: 0o600 });
+  await writeFile(resolve(output, 'result.json'), JSON.stringify({ ok: true, runId, checks, platform: process.platform, engine, appBinary, apiOrigins: bases, nativeWebDriver: true, mockedIpc: false }, null, 2), { mode: 0o600 });
   console.log(`Verified ${checks.length} native acceptance groups against two isolated real instances. No installers or native runtime claims for other operating systems.`);
 } catch (error) {
   process.exitCode = 1;
@@ -338,7 +353,7 @@ try {
   console.error(failure);
   await mkdir(output, { recursive: true, mode: 0o700 });
   try { await safeScreenshot(); } catch { /* Failure evidence must not replace the original diagnostic. */ }
-  await writeFile(resolve(output, 'result.json'), JSON.stringify({ ok: false, runId, checks, error: failure, diagnostic: await safeDiagnostic() }, null, 2), { mode: 0o600 });
+  await writeFile(resolve(output, 'result.json'), JSON.stringify({ ok: false, runId, checks, platform: process.platform, engine, error: failure, diagnostic: await safeDiagnostic() }, null, 2), { mode: 0o600 });
 } finally {
   clearTimeout(watchdog);
   peerSocket?.socket.close();
