@@ -1,0 +1,147 @@
+name: nu.vex native TLS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/desktop/transport/**'
+      - 'apps/server/**'
+      - 'package*.json'
+      - '.npmrc'
+      - 'scripts/verify-native-tls*.mjs'
+      - 'scripts/ci/**'
+      - '.github/workflows/native-tls.yml'
+  pull_request:
+    paths:
+      - 'apps/desktop/transport/**'
+      - 'apps/server/**'
+      - 'package*.json'
+      - '.npmrc'
+      - 'scripts/verify-native-tls*.mjs'
+      - 'scripts/ci/**'
+      - '.github/workflows/native-tls.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-tls-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    name: Linux real HTTPS and WSS
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17.11-bookworm
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: nuvex-tls-ci-admin-only
+          POSTGRES_DB: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 15
+    env:
+      RUSTUP_TOOLCHAIN: '1.99.1'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_TERM_COLOR: always
+      CARGO_TARGET_DIR: ${{ github.workspace }}/.cache/native-tls-target
+      NUVEX_SERVER_BIN: ${{ github.workspace }}/.cache/native-tls-target/debug/nuvex-server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.14.0'
+          cache: npm
+      - name: Install pinned Rust
+        run: rustup toolchain install 1.99.1 --profile minimal
+      - name: Install locked frontend test dependencies
+        run: npx --yes npm@11.21.1 ci
+      - name: Generate and validate private synthetic certificates with existing OpenSSL
+        run: node scripts/ci/tls-certificates.mjs prepare
+      - name: Build real instance service
+        run: cargo build --manifest-path apps/server/Cargo.toml --locked
+      - name: Compile the actual native TLS integration before limiting trust roots
+        run: cargo test --manifest-path apps/desktop/transport/Cargo.toml --test tls --no-run --locked
+      - name: Create an isolated application database
+        run: |
+          app_password="$(openssl rand -hex 32)"
+          echo "::add-mask::$app_password"
+          docker exec -i '${{ job.services.postgres.id }}' psql --username=postgres --dbname=postgres --set=ON_ERROR_STOP=1 <<SQL
+          CREATE ROLE nuvex_tls LOGIN PASSWORD '$app_password' NOSUPERUSER NOCREATEDB NOCREATEROLE;
+          CREATE DATABASE nuvex_tls OWNER nuvex_tls;
+          REVOKE ALL ON DATABASE nuvex_tls FROM PUBLIC;
+          SQL
+          echo "NUVEX_TLS_DATABASE_URL=postgres://nuvex_tls:$app_password@127.0.0.1:5432/nuvex_tls" >> "$GITHUB_ENV"
+      - name: Exercise the real release-policy native transport against HTTPS and WSS
+        env:
+          # Scope fixture trust to this process and its Rust children, not Cargo downloads.
+          SSL_CERT_FILE: ${{ runner.temp }}/nuvex-tls/ca/cert.pem
+          CARGO_NET_OFFLINE: 'true'
+        run: node scripts/verify-native-tls.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-tls-linux-verification
+          path: .cache/verify-native-tls/**/result.json
+          if-no-files-found: ignore
+          retention-days: 7
+
+  windows:
+    name: Windows real HTTPS and WSS
+    runs-on: windows-2022
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      RUSTUP_TOOLCHAIN: '1.99.1-x86_64-pc-windows-msvc'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_TERM_COLOR: always
+      CARGO_TARGET_DIR: ${{ github.workspace }}/.cache/native-tls-target
+      NUVEX_SERVER_BIN: ${{ github.workspace }}/.cache/native-tls-target/debug/nuvex-server.exe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.14.0'
+          cache: npm
+      - name: Install pinned MSVC Rust
+        run: rustup toolchain install 1.99.1-x86_64-pc-windows-msvc --profile minimal
+      - name: Install locked frontend test dependencies
+        run: npx --yes npm@11.21.1 ci
+      - name: Generate and validate private synthetic certificates with existing OpenSSL
+        run: node scripts/ci/tls-certificates.mjs prepare
+      - name: Trust only the owned synthetic CA in the disposable hosted-runner LocalMachine Root
+        timeout-minutes: 2
+        run: ./scripts/ci/windows-tls-trust.ps1 -Action Add
+      - name: Build real instance service
+        run: cargo build --manifest-path apps/server/Cargo.toml --locked
+      - name: Compile the actual native TLS integration
+        run: cargo test --manifest-path apps/desktop/transport/Cargo.toml --test tls --no-run --locked
+      - name: Start isolated native PostgreSQL
+        run: ./scripts/ci/windows-postgres.ps1 -Action Start -Port 55433
+      - name: Exercise the real release-policy native transport against HTTPS and WSS
+        run: |
+          $env:NUVEX_TLS_DATABASE_URL = $env:NUVEX_DESKTOP_DATABASE_URL
+          node scripts/verify-native-tls.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'Native TLS acceptance failed.' }
+      - name: Remove only the owned synthetic CA from the disposable hosted-runner LocalMachine Root
+        if: always()
+        timeout-minutes: 2
+        run: ./scripts/ci/windows-tls-trust.ps1 -Action Remove
+      - name: Stop only the owned PostgreSQL cluster
+        if: always()
+        run: ./scripts/ci/windows-postgres.ps1 -Action Stop -Port 55433
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-tls-windows-verification
+          # Only redacted synthetic acceptance results, never certificates/keys/logs.
+          path: .cache/verify-native-tls/**/result.json
+          if-no-files-found: ignore
+          retention-days: 7

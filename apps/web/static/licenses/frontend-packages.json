@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "packages": [
+    {
+      "name": "svelte",
+      "version": "5.57.2",
+      "license": "MIT",
+      "directory": "svelte",
+      "upstream": "https://www.npmjs.com/package/svelte/v/5.57.2",
+      "files": [
+        {
+          "name": "LICENSE.md",
+          "sha256": "06257f4847b13a49a039efb17b944c141e71b12fd8d231b362d86919067d77a3"
+        }
+      ]
+    },
+    {
+      "name": "@sveltejs/kit",
+      "version": "2.70.3",
+      "license": "MIT",
+      "directory": "sveltekit",
+      "upstream": "https://www.npmjs.com/package/@sveltejs/kit/v/2.70.3",
+      "files": [
+        {
+          "name": "LICENSE",
+          "sha256": "ac6ecdc526c9e6aec1db76f0e8dfe344d792380e974686476e7c512152ae2636"
+        }
+      ]
+    },
+    {
+      "name": "clsx",
+      "version": "2.1.1",
+      "license": "MIT",
+      "directory": "clsx",
+      "upstream": "https://www.npmjs.com/package/clsx/v/2.1.1",
+      "files": [
+        {
+          "name": "license",
+          "sha256": "9a9edad7baae52622bddf3c15b2ef8a33d2c89f2d25408ad13e8a7481c6b0c97"
+        }
+      ]
+    },
+    {
+      "name": "devalue",
+      "version": "5.9.4",
+      "license": "MIT",
+      "directory": "devalue",
+      "upstream": "https://www.npmjs.com/package/devalue/v/5.9.4",
+      "files": [
+        {
+          "name": "LICENSE",
+          "sha256": "e399db7e952e45cae84f1b53d72ba8dbad2daaa7ab8cd1f0ab72fea5ab73b225"
+        }
+      ]
+    },
+    {
+      "name": "esm-env",
+      "version": "1.2.2",
+      "license": "MIT",
+      "directory": "esm-env",
+      "upstream": "https://www.npmjs.com/package/esm-env/v/1.2.2",
+      "files": [
+        {
+          "name": "LICENSE",
+          "sha256": "6df5276ee7531fcc5446f19082c12e77bb6c5f081fd2b6d6cf88180a5ee36acd"
+        }
+      ]
+    },
+    {
+      "name": "vite",
+      "version": "7.3.7",
+      "license": "MIT",
+      "directory": "vite",
+      "upstream": "https://www.npmjs.com/package/vite/v/7.3.7",
+      "files": [
+        {
+          "name": "LICENSE.md",
+          "sha256": "a77a1c089806b39ad339535bdf3677f636c91d96693e8ad7b11fe733f650ea64"
+        }
+      ]
+    },
+    {
+      "name": "@tauri-apps/api",
+      "version": "2.12.4",
+      "license": "Apache-2.0 OR MIT",
+      "directory": "tauri-api",
+      "upstream": "https://www.npmjs.com/package/@tauri-apps/api/v/2.12.4",
+      "files": [
+        {
+          "name": "LICENSE-APACHE-2.0",
+          "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594"
+        },
+        {
+          "name": "LICENSE-MIT",
+          "sha256": "9dd42ea92cff2ede5cd477cbfcce051b2d0115c0ac7f368ee88cb545055dff1d"
+        },
+        {
+          "name": "LICENSE.spdx",
+          "sha256": "5e834fe9788c524210deda859c46a550ffa5aa0cba9ea0572f0d81120e97c008"
+        }
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "file": "licenses/nuvex/LICENSE",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "file": "licenses/nuvex/NOTICE",
+      "sha256": "e951cc0bf55118fd23d03b8a1b94fe0926b7656de01789f7fb8c84c63f79cc9a"
+    },
+    {
+      "file": "fonts/LICENSE.txt",
+      "sha256": "930853ee1daa68554d9e35c8a9175affb74f699fad9a5da6ee5ebe76379d9137"
+    }
+  ]
+}
