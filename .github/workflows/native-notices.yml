@@ -71,6 +71,23 @@ jobs:
         # The collector runs the configured frontend build and Tauri --no-bundle.
         # Raw Cargo metadata, diagnostics, manifests and binaries stay private.
         run: node scripts/collect-native-notices.mjs
+      - name: Report the bounded collection failure without private output
+        # The collector writes only constant codes and its current phase. Publish
+        # exactly that, so a failed run stays diagnosable without raw logs or
+        # downloading the artifact with repository credentials.
+        if: failure()
+        run: |
+          $failure = Get-ChildItem -Path .cache/native-notices -Recurse -Filter candidate-failure.json -ErrorAction SilentlyContinue |
+            Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $failure) {
+            Write-Output '::error title=Native notice collection::No bounded failure summary was produced.'
+            exit 0
+          }
+          $data = Get-Content -LiteralPath $failure.FullName -Raw | ConvertFrom-Json
+          $detail = if ($data.error.detail) { $data.error.detail } else { '(no detail)' }
+          $message = "Phase: $($data.phase). Code: $($data.error.code). Detail: $detail." -replace "[`r`n]+", ' '
+          Write-Output "::error title=Native notice collection::$message"
+          Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Value "### Native notice collection failed`n`n$message"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
