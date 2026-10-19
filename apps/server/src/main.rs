@@ -5,6 +5,7 @@ mod config;
 mod error;
 mod messaging;
 mod realtime;
+mod request_security;
 
 use crate::{config::Config, error::ApiError};
 use axum::{
@@ -38,18 +39,10 @@ pub struct AppState {
 }
 
 pub fn check_origin(state: &AppState, headers: &HeaderMap) -> Result<(), ApiError> {
-    if headers
-        .get(header::ORIGIN)
-        .and_then(|value| value.to_str().ok())
-        != Some(&state.config.allowed_origin)
-    {
-        return Err(ApiError::new(
-            StatusCode::FORBIDDEN,
-            "origin_not_allowed",
-            "El origen de esta solicitud no está autorizado.",
-        ));
+    match request_security::origin(&state.config.allowed_origin, headers)? {
+        request_security::RequestOrigin::Browser => Ok(()),
+        request_security::RequestOrigin::Absent => Err(request_security::origin_error()),
     }
-    Ok(())
 }
 
 async fn security(State(state): State<AppState>, request: Request, next: Next) -> Response {
@@ -57,6 +50,13 @@ async fn security(State(state): State<AppState>, request: Request, next: Next) -
         *request.method(),
         Method::GET | Method::HEAD | Method::OPTIONS
     ) {
+        request_security::unsafe_request(
+            &state.config.allowed_origin,
+            request.uri().path(),
+            request.headers(),
+        )
+        .err()
+    } else if request.headers().contains_key(header::ORIGIN) {
         check_origin(&state, request.headers()).err()
     } else {
         None

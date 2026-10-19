@@ -1,0 +1,4 @@
+[[permission]]
+identifier = "allow-instance-transport"
+description = "Allow the fixed-origin communication mediator from the local main window only."
+commands.allow = ["nuvex_connect", "nuvex_request", "nuvex_events", "nuvex_events_control", "nuvex_dispose"]

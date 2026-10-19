@@ -2,6 +2,7 @@ use crate::{
     auth::{self, Auth},
     communities,
     error::ApiError,
+    request_security::{self, RequestOrigin},
     AppState,
 };
 use axum::{
@@ -9,7 +10,7 @@ use axum::{
         ws::{Message, WebSocket, WebSocketUpgrade},
         Query, State,
     },
-    http::HeaderMap,
+    http::{header, HeaderMap},
     response::Response,
     Json,
 };
@@ -39,6 +40,40 @@ impl Event {
 pub struct WsTicket {
     pub auth: Auth,
     pub created: Instant,
+    pub audience: TicketAudience,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TicketAudience {
+    BrowserOrigin,
+    OriginlessBearer,
+}
+
+impl TicketAudience {
+    fn issue(allowed: &str, headers: &HeaderMap, auth: &Auth) -> Result<Self, ApiError> {
+        match request_security::origin(allowed, headers)? {
+            RequestOrigin::Browser => Ok(Self::BrowserOrigin),
+            RequestOrigin::Absent => {
+                request_security::without_cookies(headers)?;
+                if auth.provenance != auth::Provenance::Bearer {
+                    return Err(request_security::origin_error());
+                }
+                Ok(Self::OriginlessBearer)
+            }
+        }
+    }
+
+    fn accepts(self, origin: RequestOrigin) -> Result<(), ApiError> {
+        if matches!(
+            (self, origin),
+            (Self::BrowserOrigin, RequestOrigin::Browser)
+                | (Self::OriginlessBearer, RequestOrigin::Absent)
+        ) {
+            Ok(())
+        } else {
+            Err(request_security::origin_error())
+        }
+    }
 }
 
 #[derive(Default)]
@@ -85,7 +120,10 @@ pub struct EventQuery {
 pub async fn ticket(
     State(state): State<AppState>,
     auth: Auth,
+    headers: HeaderMap,
 ) -> Result<Json<TicketResponse>, ApiError> {
+    // Ticket audience comes from the authenticated HTTP request, never a client flag.
+    let audience = TicketAudience::issue(&state.config.allowed_origin, &headers, &auth)?;
     let mut tickets = state.tickets.lock().map_err(|_| ApiError::internal())?;
     tickets.retain(|_, ticket| ticket.created.elapsed() < Duration::from_secs(30));
     if tickets.len() >= 2048
@@ -103,6 +141,7 @@ pub async fn ticket(
         WsTicket {
             auth,
             created: Instant::now(),
+            audience,
         },
     );
     Ok(Json(TicketResponse { ticket }))
@@ -114,10 +153,18 @@ pub async fn events(
     query: Result<Query<EventQuery>, axum::extract::rejection::QueryRejection>,
     ws: WebSocketUpgrade,
 ) -> Result<Response, ApiError> {
-    crate::check_origin(&state, &headers)?;
+    let origin = request_security::origin(&state.config.allowed_origin, &headers)?;
+    if origin == RequestOrigin::Absent {
+        request_security::without_cookies(&headers)?;
+    }
     let Query(query) =
         query.map_err(|_| ApiError::validation("La solicitud de eventos no es válida."))?;
     let auth = if let Some(ticket) = query.ticket {
+        // Browser tickets may accompany ambient cookies, but never a second explicit
+        // credential. Native ticket handshakes carry only the short-lived ticket.
+        if headers.contains_key(header::AUTHORIZATION) {
+            return Err(request_security::origin_error());
+        }
         if ticket.len() != 64 || !ticket.bytes().all(|byte| byte.is_ascii_hexdigit()) {
             return Err(ApiError::unauthorized());
         }
@@ -130,8 +177,11 @@ pub async fn events(
         if ticket.created.elapsed() >= Duration::from_secs(30) {
             return Err(ApiError::unauthorized());
         }
+        ticket.audience.accepts(origin)?;
         ticket.auth
     } else {
+        // Cookie or direct bearer WebSockets keep the existing browser Origin policy.
+        crate::check_origin(&state, &headers)?;
         auth::authenticate(&state, &headers).await?
     };
     if !auth::session_active(&state, &auth).await? {
@@ -208,6 +258,54 @@ async fn handle(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use axum::http::HeaderValue;
+
+    #[test]
+    fn websocket_ticket_audiences_are_server_derived_and_not_interchangeable() {
+        let allowed = "https://chat.example.test";
+        let bearer = Auth {
+            user_id: Uuid::new_v4(),
+            session_hash: "a".repeat(64),
+            provenance: auth::Provenance::Bearer,
+        };
+        let cookie = Auth {
+            provenance: auth::Provenance::Cookie,
+            ..bearer.clone()
+        };
+        let mut headers = HeaderMap::new();
+        assert_eq!(
+            TicketAudience::issue(allowed, &headers, &bearer).unwrap(),
+            TicketAudience::OriginlessBearer
+        );
+        assert!(TicketAudience::issue(allowed, &headers, &cookie).is_err());
+        headers.insert(header::COOKIE, HeaderValue::from_static(""));
+        assert!(TicketAudience::issue(allowed, &headers, &bearer).is_err());
+        headers.remove(header::COOKIE);
+        headers.insert(
+            header::ORIGIN,
+            HeaderValue::from_static("https://chat.example.test"),
+        );
+        assert_eq!(
+            TicketAudience::issue(allowed, &headers, &bearer).unwrap(),
+            TicketAudience::BrowserOrigin
+        );
+        assert_eq!(
+            TicketAudience::issue(allowed, &headers, &cookie).unwrap(),
+            TicketAudience::BrowserOrigin
+        );
+        assert!(TicketAudience::BrowserOrigin
+            .accepts(RequestOrigin::Absent)
+            .is_err());
+        assert!(TicketAudience::OriginlessBearer
+            .accepts(RequestOrigin::Browser)
+            .is_err());
+        assert!(TicketAudience::OriginlessBearer
+            .accepts(RequestOrigin::Absent)
+            .is_ok());
+        assert!(TicketAudience::BrowserOrigin
+            .accepts(RequestOrigin::Browser)
+            .is_ok());
+    }
     #[test]
     fn connection_quota_is_per_account_and_released_on_drop() {
         let registry = Arc::new(Connections::default());

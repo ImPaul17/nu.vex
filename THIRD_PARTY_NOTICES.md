@@ -24,4 +24,18 @@ The fonts are served locally. The `geist` framework integration is not installed
 
 ## Package dependencies
 
-The npm dependency graph is recorded in `package-lock.json`; each dependency retains its own license and notices. This document's font record is not a complete distribution license audit. Before public release, review all shipped JavaScript/Rust dependencies and native artifacts, preserve required notices, and update this file for additional vendored material.
+The native bridge imports the official `@tauri-apps/api` package, pinned to
+2.12.4 in the npm lockfile. Its upstream license is `Apache-2.0 OR MIT`, with
+copyright held by the Tauri Apps Contributors. Unmodified copies of its
+[Apache license](apps/web/static/licenses/tauri-api/LICENSE-APACHE-2.0),
+[MIT license and copyright notice](apps/web/static/licenses/tauri-api/LICENSE-MIT),
+and [SPDX record](apps/web/static/licenses/tauri-api/LICENSE.spdx) accompany the
+static client. The source is maintained in the
+[official Tauri repository](https://github.com/tauri-apps/tauri/tree/dev/packages/api).
+
+The npm dependency graph and Rust Cargo lockfiles record the dependency versions;
+each dependency retains its own license and notices. These records do not
+constitute a complete distribution license audit. Before distributing packaged
+native binaries, review all shipped JavaScript/Rust dependencies and native
+artifacts, preserve required notices, and update this file for additional
+vendored material.

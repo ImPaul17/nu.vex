@@ -84,6 +84,13 @@ impl RateLimiter {
 pub struct Auth {
     pub user_id: Uuid,
     pub session_hash: String,
+    pub provenance: Provenance,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Provenance {
+    Cookie,
+    Bearer,
 }
 
 impl FromRequestParts<AppState> for Auth {
@@ -105,13 +112,20 @@ pub fn token_hash(value: &str) -> String {
     format!("{:x}", Sha256::digest(value.as_bytes()))
 }
 
-pub fn read_token(headers: &HeaderMap) -> Result<String, ApiError> {
-    let token = if let Some(header) = headers.get(header::AUTHORIZATION) {
-        header
-            .to_str()
-            .ok()
-            .and_then(|value| value.strip_prefix("Bearer "))
-            .map(str::to_owned)
+pub fn read_credentials(headers: &HeaderMap) -> Result<(String, Provenance), ApiError> {
+    let mut authorization = headers.get_all(header::AUTHORIZATION).iter();
+    let (token, provenance) = if let Some(header) = authorization.next() {
+        if authorization.next().is_some() {
+            return Err(ApiError::unauthorized());
+        }
+        (
+            header
+                .to_str()
+                .ok()
+                .and_then(|value| value.strip_prefix("Bearer "))
+                .map(str::to_owned),
+            Provenance::Bearer,
+        )
     } else {
         let mut cookies = headers
             .get_all(header::COOKIE)
@@ -124,17 +138,18 @@ pub fn read_token(headers: &HeaderMap) -> Result<String, ApiError> {
         if cookies.next().is_some() {
             return Err(ApiError::unauthorized());
         }
-        token
-    }
-    .ok_or_else(ApiError::unauthorized)?;
+        (token, Provenance::Cookie)
+    };
+    let token = token.ok_or_else(ApiError::unauthorized)?;
     if token.len() != 64 || !token.bytes().all(|byte| byte.is_ascii_hexdigit()) {
         return Err(ApiError::unauthorized());
     }
-    Ok(token)
+    Ok((token, provenance))
 }
 
 pub async fn authenticate(state: &AppState, headers: &HeaderMap) -> Result<Auth, ApiError> {
-    let session_hash = token_hash(&read_token(headers)?);
+    let (token, provenance) = read_credentials(headers)?;
+    let session_hash = token_hash(&token);
     let user_id = sqlx::query_scalar(
         "SELECT user_id FROM sessions WHERE token_hash = $1 AND expires_at > now()",
     )
@@ -145,6 +160,7 @@ pub async fn authenticate(state: &AppState, headers: &HeaderMap) -> Result<Auth,
     Ok(Auth {
         user_id,
         session_hash,
+        provenance,
     })
 }
 
@@ -299,6 +315,11 @@ pub async fn register(
         ));
     }
     let input = error::json(payload)?;
+    crate::request_security::login_transport(
+        &state.config.allowed_origin,
+        &headers,
+        &input.transport,
+    )?;
     let email = validate_email(&input.email)?;
     let handle = validate_handle(&input.handle)?;
     let name = validate_name(&input.display_name)?;
@@ -369,6 +390,11 @@ pub async fn login(
         &state.config.trusted_proxies,
     )?)?;
     let input = error::json(payload)?;
+    crate::request_security::login_transport(
+        &state.config.allowed_origin,
+        &headers,
+        &input.transport,
+    )?;
     let email = validate_email(&input.email)?;
     validate_password(&input.password)?;
     let row: Option<(Uuid, String)> =
@@ -443,18 +469,20 @@ pub async fn logout(State(state): State<AppState>, auth: Auth) -> Result<Respons
         .map_err(|_| ApiError::internal())?
         .retain(|_, ticket| ticket.auth.session_hash != auth.session_hash);
     let mut response = StatusCode::NO_CONTENT.into_response();
-    response.headers_mut().insert(
-        header::SET_COOKIE,
-        HeaderValue::from_str(&format!(
-            "nuvex_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0{}",
-            if state.config.insecure_dev {
-                ""
-            } else {
-                "; Secure"
-            }
-        ))
-        .map_err(|_| ApiError::internal())?,
-    );
+    if auth.provenance == Provenance::Cookie {
+        response.headers_mut().insert(
+            header::SET_COOKIE,
+            HeaderValue::from_str(&format!(
+                "nuvex_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0{}",
+                if state.config.insecure_dev {
+                    ""
+                } else {
+                    "; Secure"
+                }
+            ))
+            .map_err(|_| ApiError::internal())?,
+        );
+    }
     Ok(response)
 }
 
@@ -540,12 +568,22 @@ mod tests {
             ))
             .unwrap(),
         );
-        assert!(read_token(&headers).is_err());
+        assert!(read_credentials(&headers).is_err());
         headers.clear();
         headers.insert(
             header::AUTHORIZATION,
             HeaderValue::from_static("Bearer invalid"),
         );
-        assert!(read_token(&headers).is_err());
+        assert!(read_credentials(&headers).is_err());
+        headers.insert(
+            header::AUTHORIZATION,
+            HeaderValue::from_str(&format!("Bearer {}", "a".repeat(64))).unwrap(),
+        );
+        assert_eq!(read_credentials(&headers).unwrap().1, Provenance::Bearer);
+        headers.append(
+            header::AUTHORIZATION,
+            HeaderValue::from_str(&format!("Bearer {}", "b".repeat(64))).unwrap(),
+        );
+        assert!(read_credentials(&headers).is_err());
     }
 }
