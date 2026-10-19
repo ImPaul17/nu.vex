@@ -5,7 +5,7 @@ const externalBaseURL = process.env.NUVEX_E2E_BASE_URL;
 
 export default defineConfig({
   ...base,
-  testMatch: ['instance.spec.ts', 'instance-races.spec.ts'],
+  testMatch: ['instance.spec.ts', 'instance-races.spec.ts', 'instance-security.spec.ts'],
   fullyParallel: false,
   workers: 1,
   timeout: 60_000,
