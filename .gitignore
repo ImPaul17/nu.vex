@@ -3,6 +3,7 @@ node_modules/
 build/
 dist/
 target/
+apps/desktop/src-tauri/gen/
 .cache/
 test-results/
 playwright-report/

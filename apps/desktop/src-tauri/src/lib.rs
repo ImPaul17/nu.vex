@@ -1,5 +1,6 @@
 use nuvex_transport::{
-    ApiResponse, Connection, StreamCommand, StreamEvent, Subscription, Transport, TransportError,
+    ApiResponse, Connection, Document, StreamCommand, StreamEvent, Subscription, Transport,
+    TransportError,
 };
 use std::sync::Arc;
 use tauri::{
@@ -31,14 +32,23 @@ fn caller(window: &WebviewWindow) -> Result<(), TransportError> {
     })
 }
 #[tauri::command]
+async fn nuvex_document(
+    window: WebviewWindow,
+    state: State<'_, Arc<Transport>>,
+) -> Result<Document, TransportError> {
+    caller(&window)?;
+    state.document()
+}
+#[tauri::command]
 async fn nuvex_connect(
     window: WebviewWindow,
     state: State<'_, Arc<Transport>>,
     origin: String,
     order: u64,
+    document_id: String,
 ) -> Result<Connection, TransportError> {
     caller(&window)?;
-    state.connect(&origin, order)
+    state.connect(&origin, order, &document_id)
 }
 #[tauri::command]
 async fn nuvex_request(
@@ -100,6 +110,7 @@ pub fn run() {
     tauri::Builder::default()
         .manage(transport)
         .invoke_handler(tauri::generate_handler![
+            nuvex_document,
             nuvex_connect,
             nuvex_request,
             nuvex_events,

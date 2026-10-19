@@ -1,6 +1,15 @@
 import { Channel, invoke, isTauri } from '@tauri-apps/api/core';
 
 export const isNative = typeof window !== 'undefined' && isTauri();
+// Bind to this document eagerly, once. Re-reading during a lazy connection could
+// let an invocation queued by a destroyed document adopt the new document nonce.
+// Catch eagerly too, so a failed handshake cannot create an unhandled rejection.
+const documentHandshake = isNative
+  ? invoke<{ documentId: string }>('nuvex_document').then(
+    (document) => ({ document, error: null }),
+    (error: unknown) => ({ document: null, error }),
+  )
+  : null;
 
 // Matching DOM event arguments keep the browser WebSocket structurally usable;
 // this interface does not pretend the Rust stream is a browser WebSocket.
@@ -100,7 +109,11 @@ export function createNativeTransport(baseUrl: string) {
   function closeSockets() { for (const socket of sockets) socket.close(); sockets.clear(); }
   async function selected(): Promise<Connection> {
     if (disposed) throw new NativeTransportError('La conexión ha cambiado.', 409, 'stale_session');
-    connection ??= invoke<Connection>('nuvex_connect', { origin: baseUrl, order }).catch((error: unknown) => { throw transportError(error); });
+    connection ??= (async () => {
+      const handshake = await documentHandshake;
+      if (!handshake?.document) throw transportError(handshake?.error);
+      return invoke<Connection>('nuvex_connect', { origin: baseUrl, order, documentId: handshake.document.documentId });
+    })().catch((error: unknown) => { throw transportError(error); });
     const value = await connection;
     if (disposed) {
       await invoke('nuvex_dispose', { handle: value.handle }).catch(() => undefined);

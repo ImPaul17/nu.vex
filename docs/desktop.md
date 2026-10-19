@@ -113,6 +113,14 @@ memory, strips tokens from IPC authentication responses, and invalidates stale
 connections on instance/account changes. It does not introduce keychain storage,
 generic HTTP requests, or unrestricted OS integrations.
 
+The six custom commands are `nuvex_document`, `nuvex_connect`, `nuvex_request`,
+`nuvex_events`, `nuvex_events_control`, and `nuvex_dispose`. The read-only document
+handshake returns a Rust-owned UUID captured once by the loaded frontend module.
+Reload/reset rotates that nonce. Connection selection validates the nonce and
+selection order atomically, so queued work from an old document cannot displace
+the current connection with a larger old order. Request/stream generations guard
+later responses; handles and nonces are state identifiers rather than credentials.
+
 Reload/disposal clears the local credential reference; it does not revoke the
 server session. Explicit successful logout revokes that session, which otherwise
 has its server-defined seven-day expiry. The current mediator uses direct
@@ -146,7 +154,8 @@ Clippy, and launches `scripts/verify-desktop.mjs` through WebKitWebDriver,
 `tauri-driver` 2.1.0, and Xvfb. Node uses the real WebDriver protocol without a
 WDIO dependency or mocked IPC. Two isolated PostgreSQL databases and owned API
 processes exercise native UI accounts, bidirectional events, restart/persistence,
-logout, instance changes, storage boundaries, a no-cors fetch rejected with an
+logout, real document refresh with an old-nonce rejection followed by successful
+UI login, instance changes, storage boundaries, a no-cors fetch rejected with an
 actual `connect-src` CSP violation, copyable theme JSON, and rejected IPC
 operations. See [testing](testing.md#linux-native-runtime-acceptance).
 

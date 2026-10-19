@@ -108,15 +108,18 @@ HTTP commands, without WDIO or mocked invoke calls. It starts only owned API
 processes on ports 3001/3002 and connects them to two distinct migrated test
 databases. The native application registers/joins through its actual UI and
 exchanges events with an independent originless-bearer HTTP/WebSocket account.
-The flow checks process restart/history, logout/relogin, application restart
-without persisted credentials, instance isolation, blocked direct webview fetch,
+The flow checks process restart/history, logout/relogin, document refresh and
+application restart without persisted credentials, instance isolation, blocked direct webview fetch,
 and real IPC route/generation/window-permission/token-response boundaries. Direct
 fetch uses no-cors and omitted credentials and must produce both rejection and a
 `securitypolicyviolation` event for `connect-src` and the requested destination;
 Node checks the same endpoint before/after. This distinguishes the expected CSP
 denial from a CORS-only failure. Native appearance's **Ver JSON** opens a
 read-only theme document validated with the existing shared parser, without
-credentials or a download. The integrated flow currently reports eight groups.
+credentials or a download. After a real WebDriver refresh, it requires a new
+native document nonce, rejects the old nonce even with a larger selection order,
+and then logs in through the normal UI to prove the current connection survived.
+The integrated flow currently reports eight groups.
 
 The workflow supplies `NUVEX_DESKTOP_DATABASE_URL` and
 `NUVEX_DESKTOP_SECOND_DATABASE_URL` for dedicated loopback PostgreSQL databases.

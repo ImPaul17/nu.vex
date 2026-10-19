@@ -278,12 +278,27 @@ try {
   passed('real process restart preserves history and native reconnection converges');
 
   await logoutUi(); await loginUi(); await textVisible(outbound, '.messages');
+  const oldDocument = await executeAsync(`const done=arguments[arguments.length-1];
+    window.__TAURI_INTERNALS__.invoke('nuvex_document').then(done,()=>done(null));`);
+  assert.match(oldDocument?.documentId ?? '', /^[a-f0-9-]{36}$/i, 'The authenticated document must have a native identity.');
+  await inSession('/refresh', {});
+  await textVisible('De vuelta con tu equipo.', '.entry-card');
+  assert.equal(await has('.account-profile'), false, 'Document reload must clear the native credential and private workspace.');
+  const newDocument = await executeAsync(`const done=arguments[arguments.length-1];
+    window.__TAURI_INTERNALS__.invoke('nuvex_document').then(done,()=>done(null));`);
+  assert.match(newDocument?.documentId ?? '', /^[a-f0-9-]{36}$/i, 'The reloaded document must have a native identity.');
+  assert.notEqual(newDocument.documentId, oldDocument.documentId, 'A real reload must rotate the native document nonce.');
+  const staleDocument = await executeAsync(`const done=arguments[arguments.length-1];const [origin,documentId]=arguments;
+    window.__TAURI_INTERNALS__.invoke('nuvex_connect',{origin,order:Date.now(),documentId})
+      .then(()=>done(false),(error)=>done(error?.code==='stale_session'));`, [bases[1], oldDocument.documentId]);
+  assert.equal(staleDocument, true, 'A previous document nonce must be rejected even with a larger selection order.');
+  await loginUi(); await textVisible(restored, '.messages');
   await closeApp(); await openApp();
   if (await has('#instance-url')) await selectInstance(0);
   await textVisible('De vuelta con tu equipo.', '.entry-card');
   assert.equal(await has('.account-profile'), false, 'Native process restart must not restore a bearer credential from storage.');
   await loginUi(); await textVisible(restored, '.messages'); await logoutUi();
-  passed('logout clears the workspace and native process restart requires login while history persists');
+  passed('logout, document reload, and process restart clear local credentials while stale document selection cannot replace the new session');
 
   await selectInstance(1); await registerUi(1);
   await fill('#first-community', `Independent ${prefix}`); await clickCss('.entry-form button[type="submit"]');
@@ -299,8 +314,9 @@ try {
 
   const boundary = await executeAsync(`const done=arguments[arguments.length-1]; const [first,second,password,email]=arguments; (async()=>{
     const invoke=window.__TAURI_INTERNALS__?.invoke; if(!invoke)throw Error('Native IPC unavailable');
-    const order=Date.now(); const a=await invoke('nuvex_connect',{origin:first,order});
-    const b=await invoke('nuvex_connect',{origin:second,order:order+1});
+    const {documentId}=await invoke('nuvex_document');
+    const order=1_000_000; const a=await invoke('nuvex_connect',{origin:first,order,documentId});
+    const b=await invoke('nuvex_connect',{origin:second,order:order+1,documentId});
     const rejected=async(command,args)=>{try{await invoke(command,args);return false;}catch{return true;}};
     const stale=await rejected('nuvex_request',{handle:a.handle,path:'/instance',method:'GET'});
     const route=await rejected('nuvex_request',{handle:b.handle,path:'/../../health/live',method:'GET'});

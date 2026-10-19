@@ -68,6 +68,11 @@ pub struct Connection {
     pub handle: String,
 }
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Document {
+    pub document_id: String,
+}
+#[derive(Serialize)]
 pub struct ApiResponse {
     pub status: u16,
     pub payload: Value,
@@ -110,10 +115,19 @@ struct Selection {
     requests: CancellationToken,
     stream: Option<(String, Arc<StreamControl>)>,
 }
-#[derive(Default)]
 struct State {
+    document_id: String,
     order: u64,
     selected: Option<Selection>,
+}
+impl Default for State {
+    fn default() -> Self {
+        Self {
+            document_id: Uuid::new_v4().to_string(),
+            order: 0,
+            selected: None,
+        }
+    }
 }
 struct Snapshot {
     handle: String,
@@ -149,10 +163,23 @@ impl Transport {
         })
     }
 
-    pub fn connect(&self, origin: &str, order: u64) -> Result<Connection, TransportError> {
+    /// Reading the current document nonce never selects or invalidates a session.
+    pub fn document(&self) -> Result<Document, TransportError> {
+        let state = self.state.lock().map_err(|_| TransportError::stale())?;
+        Ok(Document {
+            document_id: state.document_id.clone(),
+        })
+    }
+
+    pub fn connect(
+        &self,
+        origin: &str,
+        order: u64,
+        document_id: &str,
+    ) -> Result<Connection, TransportError> {
         let origin = policy::origin(origin, self.allow_loopback)?;
         let mut state = self.state.lock().map_err(|_| TransportError::stale())?;
-        if order == 0 || order <= state.order {
+        if document_id != state.document_id || order == 0 || order <= state.order {
             return Err(TransportError::stale());
         }
         if let Some(previous) = state.selected.take() {
@@ -181,6 +208,7 @@ impl Transport {
                 previous.cancel.cancel();
             }
             state.order = 0;
+            state.document_id = Uuid::new_v4().to_string();
         }
     }
     pub fn dispose(&self, handle: &str) {
@@ -634,7 +662,14 @@ mod tests {
 
     fn connected() -> (Transport, String) {
         let transport = Transport::new(true).unwrap();
-        let handle = transport.connect("https://chat.example", 1).unwrap().handle;
+        let handle = transport
+            .connect(
+                "https://chat.example",
+                1,
+                &transport.document().unwrap().document_id,
+            )
+            .unwrap()
+            .handle;
         (transport, handle)
     }
     fn signed_in(transport: &Transport, handle: &str, token: &str) {
@@ -653,16 +688,74 @@ mod tests {
         let (transport, first) = connected();
         let old = transport.snapshot(&first, false).unwrap();
         let second = transport
-            .connect("https://other.example", 2)
+            .connect(
+                "https://other.example",
+                2,
+                &transport.document().unwrap().document_id,
+            )
             .unwrap()
             .handle;
         assert!(!transport.current(&old));
         transport.dispose(&first);
         assert!(transport.snapshot(&second, false).is_ok());
-        assert!(transport.connect("https://old.example", 1).is_err());
+        assert!(transport
+            .connect(
+                "https://old.example",
+                1,
+                &transport.document().unwrap().document_id
+            )
+            .is_err());
         transport.reset();
         assert!(transport.snapshot(&second, false).is_err());
-        assert!(transport.connect("https://after-reload.example", 1).is_ok());
+        assert!(transport
+            .connect(
+                "https://after-reload.example",
+                1,
+                &transport.document().unwrap().document_id
+            )
+            .is_ok());
+    }
+    #[test]
+    fn a_delayed_previous_document_connect_cannot_block_new_document_order_one() {
+        let (transport, _) = connected();
+        let previous_document = transport.document().unwrap().document_id;
+        transport.reset();
+        let current_document = transport.document().unwrap().document_id;
+        assert_ne!(previous_document, current_document);
+        assert!(transport
+            .connect("https://old.example", 5, &previous_document)
+            .is_err());
+        let current = transport
+            .connect("https://new.example", 1, &current_document)
+            .unwrap();
+        assert!(transport.snapshot(&current.handle, false).is_ok());
+    }
+    #[test]
+    fn a_delayed_previous_document_connect_cannot_replace_new_document_credentials() {
+        let (transport, _) = connected();
+        let previous_document = transport.document().unwrap().document_id;
+        transport.reset();
+        let current_document = transport.document().unwrap().document_id;
+        let current = transport
+            .connect("https://new.example", 1, &current_document)
+            .unwrap();
+        signed_in(&transport, &current.handle, &"b".repeat(64));
+        let before = transport.snapshot(&current.handle, false).unwrap();
+        assert!(transport
+            .connect("https://old.example", 5, &previous_document)
+            .is_err());
+        // A late read-only handshake cannot mutate the selected instance either.
+        assert_eq!(transport.document().unwrap().document_id, current_document);
+        assert!(transport.current(&before));
+        assert_eq!(
+            transport
+                .snapshot(&current.handle, false)
+                .unwrap()
+                .token
+                .unwrap()
+                .as_str(),
+            "b".repeat(64)
+        );
     }
     #[test]
     fn pending_failed_auth_never_reuses_the_previous_user_token() {
@@ -784,7 +877,10 @@ mod tests {
         )
         .await;
         let transport = Transport::new(true).unwrap();
-        let handle = transport.connect(&origin, 1).unwrap().handle;
+        let handle = transport
+            .connect(&origin, 1, &transport.document().unwrap().document_id)
+            .unwrap()
+            .handle;
         assert!(transport
             .request(&handle, "/instance", None, None)
             .await
@@ -805,7 +901,10 @@ mod tests {
     async fn actual_http_caps_responses_and_keeps_bearer_out_of_cookie_origin_headers() {
         let (origin, task) = server("200 OK", "Content-Length: 2\r\n".into(), "{}").await;
         let transport = Transport::new(true).unwrap();
-        let handle = transport.connect(&origin, 1).unwrap().handle;
+        let handle = transport
+            .connect(&origin, 1, &transport.document().unwrap().document_id)
+            .unwrap()
+            .handle;
         signed_in(&transport, &handle, &"a".repeat(64));
         assert_eq!(
             transport
@@ -824,7 +923,10 @@ mod tests {
             "",
         )
         .await;
-        let handle = transport.connect(&origin, 2).unwrap().handle;
+        let handle = transport
+            .connect(&origin, 2, &transport.document().unwrap().document_id)
+            .unwrap()
+            .handle;
         assert!(transport
             .request(&handle, "/instance", None, None)
             .await
