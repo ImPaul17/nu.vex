@@ -53,7 +53,14 @@ function counters() {
     upgradeRequests: 0, upstreamUpgradeRequests: 0, sinkRequests: 0, sinkConnections: 0, upstreamRequests: 0 };
 }
 function snapshot() { return state ? { ...state, ...state.stats, stats: undefined } : null; }
-function track(socket) { sockets.add(socket); socket.once('close', () => sockets.delete(socket)); }
+function track(socket) {
+  if (sockets.has(socket)) return;
+  sockets.add(socket);
+  // Rejected TLS/upgrade peers may reset the connection. Every owned socket,
+  // including the TLS wrapper after upgrade, needs an error boundary.
+  socket.on('error', () => socket.destroy());
+  socket.once('close', () => sockets.delete(socket));
+}
 async function listen(server) {
   servers.push(server);
   await new Promise((yes, no) => { server.once('error', no); server.listen(0, '127.0.0.1', yes); });
@@ -165,7 +172,7 @@ function tlsServer(certificate, dynamic = false) {
     secureOptions: constants.SSL_OP_NO_TICKET,
     SNICallback(_name, done) { done(null, contexts[dynamic ? activeCertificate : certificate]); } }, proxy);
   server.on('connection', (socket) => { track(socket); state.stats.newTlsConnections++; });
-  server.on('secureConnection', (socket) => negotiated.add(socket.getProtocol()));
+  server.on('secureConnection', (socket) => { track(socket); negotiated.add(socket.getProtocol()); });
   server.on('tlsClientError', () => { state.stats.tlsFailures++; });
   server.on('clientError', (_error, socket) => socket.destroy());
   server.on('upgrade', upgrade);
@@ -235,6 +242,7 @@ try {
     const received = (request, response) => { state.stats.sinkRequests++; request.resume(); json(response, 200, { unexpectedRedirect: true }); };
     const server = scheme === 'https' ? https.createServer(pairs.valid, received) : http.createServer(received);
     server.on('connection', (socket) => { track(socket); state.stats.sinkConnections++; });
+    if (scheme === 'https') server.on('secureConnection', track);
     server.on('tlsClientError', () => {});
     server.on('upgrade', (_request, socket) => { state.stats.sinkRequests++; socket.end('HTTP/1.1 400 Unexpected redirect\r\nContent-Length: 0\r\n\r\n'); });
     sinkOrigins[scheme] = `${scheme}://localhost:${await listen(server)}`;

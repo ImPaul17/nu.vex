@@ -116,7 +116,7 @@ jobs:
         run: npx --yes npm@11.21.1 ci
       - name: Generate and validate private synthetic certificates with existing OpenSSL
         run: node scripts/ci/tls-certificates.mjs prepare
-      - name: Trust only the owned synthetic CA for the current hosted-runner user
+      - name: Trust only the owned synthetic CA in the disposable hosted-runner LocalMachine Root
         timeout-minutes: 2
         run: ./scripts/ci/windows-tls-trust.ps1 -Action Add
       - name: Build real instance service
@@ -130,8 +130,9 @@ jobs:
           $env:NUVEX_TLS_DATABASE_URL = $env:NUVEX_DESKTOP_DATABASE_URL
           node scripts/verify-native-tls.mjs
           if ($LASTEXITCODE -ne 0) { throw 'Native TLS acceptance failed.' }
-      - name: Remove only the owned synthetic CA from CurrentUser Root
+      - name: Remove only the owned synthetic CA from the disposable hosted-runner LocalMachine Root
         if: always()
+        timeout-minutes: 2
         run: ./scripts/ci/windows-tls-trust.ps1 -Action Remove
       - name: Stop only the owned PostgreSQL cluster
         if: always()

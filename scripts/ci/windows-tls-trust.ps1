@@ -1,5 +1,7 @@
-# Trust only the generated CA in the current CI user's Root store, never LocalMachine.
-# https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.security/about/about_certificate_provider
+# Trust only the generated CA in LocalMachine Root on a disposable hosted CI VM.
+# CurrentUser Root import attempts timed out, including CryptUIWizImport NO_UI.
+# https://learn.microsoft.com/en-us/windows/win32/api/wincrypt/nf-wincrypt-certopenstore
+# https://docs.github.com/en/actions/reference/runners/github-hosted-runners#administrative-privileges
 # Protect is filesystem-only and permits local certificate generation smoke tests.
 # Add/Remove refuse ordinary local hosts, including self-hosted Actions runners.
 #Requires -Version 7.0
@@ -39,6 +41,13 @@ if ($Action -eq 'Protect') {
 if ($env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hosted' -or $env:RUNNER_OS -ne 'Windows' -or $env:GITHUB_RUN_ID -notmatch '^\d+$') {
     throw 'Certificate-store changes are restricted to the disposable GitHub-hosted Windows CI runner.'
 }
+$identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+try {
+    $principal = [Security.Principal.WindowsPrincipal]::new($identity)
+    if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+        throw 'The disposable hosted runner must already have administrator privileges; elevation is never requested.'
+    }
+} finally { $identity.Dispose() }
 if ($Action -eq 'Remove' -and -not (Test-Path -LiteralPath $marker -PathType Leaf)) {
     Write-Host 'No owned synthetic CA trust entry was recorded.'
     return
@@ -58,13 +67,14 @@ if ($certificate.Subject -notlike '*CN=nu.vex synthetic ca *' -or $certificate.H
 $ownership = $null
 if (Test-Path -LiteralPath $marker -PathType Leaf) {
     $ownership = Get-Content -LiteralPath $marker -Raw | ConvertFrom-Json
-    if ($ownership.version -ne 1 -or $ownership.store -ne 'CurrentUser/Root' -or $ownership.thumbprint -ne $thumbprint -or $ownership.sha256 -ne $sha256 -or $ownership.runId -ne $env:GITHUB_RUN_ID) {
+    if ($ownership.version -ne 2 -or $ownership.store -ne 'LocalMachine/Root' -or $ownership.thumbprint -ne $thumbprint -or $ownership.sha256 -ne $sha256 -or $ownership.runId -ne $env:GITHUB_RUN_ID) {
         throw 'The CA ownership record does not match this CI run.'
     }
 }
-$store = [Security.Cryptography.X509Certificates.X509Store]::new('Root', 'CurrentUser')
+$store = [Security.Cryptography.X509Certificates.X509Store]::new('Root', 'LocalMachine')
 try {
-    $store.Open([Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
+    Write-Host 'Opening the ordinary LocalMachine Root store on the disposable hosted runner.'
+    $store.Open([Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite -bor [Security.Cryptography.X509Certificates.OpenFlags]::OpenExistingOnly)
     $storedCertificates = @($store.Certificates.Find([Security.Cryptography.X509Certificates.X509FindType]::FindByThumbprint, $thumbprint, $false))
     foreach ($existing in $storedCertificates) {
         if ([Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($existing.RawData)).ToLowerInvariant() -ne $sha256) { throw 'A stored certificate fingerprint differs from the owned synthetic CA.' }
@@ -73,79 +83,37 @@ try {
         if ($storedCertificates.Count -gt 0 -and $null -eq $ownership) { throw 'A pre-existing root certificate must never be adopted or removed.' }
         if ($null -eq $ownership) {
             # Record ownership BEFORE adding, so cleanup remains possible after interruption.
-            @{version = 1; store = 'CurrentUser/Root'; thumbprint = $thumbprint; sha256 = $sha256; runId = $env:GITHUB_RUN_ID} |
+            @{version = 2; store = 'LocalMachine/Root'; thumbprint = $thumbprint; sha256 = $sha256; runId = $env:GITHUB_RUN_ID} |
                 ConvertTo-Json | Out-File -LiteralPath $marker -Encoding utf8 -NoClobber
         }
         if ($storedCertificates.Count -eq 0) {
-            # X509Store.Add can display a native protected-root consent dialog.
-            # This API explicitly documents a no-UI import into the supplied store.
-            # https://learn.microsoft.com/en-us/windows/win32/api/cryptuiapi/nf-cryptuiapi-cryptuiwizimport
-            # Structure/constant layout: Microsoft's published cryptuiapi.h.
-            Add-Type -TypeDefinition @'
-using System;
-using System.ComponentModel;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography.X509Certificates;
-
-namespace Nuvex.Ci {
-    public static class NoUiCertificateImport {
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        private struct ImportSource {
-            public uint Size;
-            public uint SubjectChoice;
-            public IntPtr CertificateContext;
-            public uint Flags;
-            [MarshalAs(UnmanagedType.LPWStr)] public string Password;
+            Write-Host 'Adding only the public owned synthetic CA through X509Store.Add.'
+            $store.Add($certificate)
         }
-
-        [DllImport("cryptui.dll", ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
-        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool CryptUIWizImport(uint flags, IntPtr parent, string title,
-            ref ImportSource source, IntPtr destinationStore);
-
-        public static void Import(X509Certificate2 certificate, X509Store store) {
-            if (certificate.HasPrivateKey || store.Location != StoreLocation.CurrentUser || store.Name != "Root")
-                throw new InvalidOperationException("Only a public certificate in CurrentUser Root is permitted.");
-            var source = new ImportSource {
-                Size = (uint)Marshal.SizeOf<ImportSource>(),
-                SubjectChoice = 2, // CRYPTUI_WIZ_IMPORT_SUBJECT_CERT_CONTEXT
-                CertificateContext = certificate.Handle,
-                Flags = 0,
-                Password = string.Empty
-            };
-            const uint flags = 0x00000001 | 0x00010000 | 0x00020000;
-            // CRYPTUI_WIZ_NO_UI | NO_CHANGE_DEST_STORE | ALLOW_CERT
-            bool success = CryptUIWizImport(flags, IntPtr.Zero, null, ref source, store.StoreHandle);
-            int error = Marshal.GetLastWin32Error();
-            GC.KeepAlive(certificate);
-            GC.KeepAlive(store);
-            if (!success) throw new Win32Exception(error, "The owned no-UI certificate import failed.");
-        }
-    }
-}
-'@
-            [Nuvex.Ci.NoUiCertificateImport]::Import($certificate, $store)
-        }
-        # Reopen through the ordinary protected store, without altered policies
-        # or UNPROTECTED flags. The real transport acceptance verifies TLS trust.
-        $verificationStore = [Security.Cryptography.X509Certificates.X509Store]::new('Root', 'CurrentUser')
-        try {
-            $verificationStore.Open([Security.Cryptography.X509Certificates.OpenFlags]::ReadOnly)
-            $verifiedCertificates = @($verificationStore.Certificates.Find([Security.Cryptography.X509Certificates.X509FindType]::FindByThumbprint, $thumbprint, $false))
-            if ($verifiedCertificates.Count -eq 0) { throw 'The owned CA is absent after reopening the ordinary CurrentUser Root store.' }
-            foreach ($verified in $verifiedCertificates) {
-                if ([Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($verified.RawData)).ToLowerInvariant() -ne $sha256) { throw 'The reopened owned CA hash differs.' }
-            }
-        } finally { $verificationStore.Close(); $verificationStore.Dispose() }
-        Write-Host 'Owned synthetic CA added only to CurrentUser Root on the hosted runner.'
     } else {
+        Write-Host 'Removing only the exact owned synthetic CA through X509Store.Remove.'
         foreach ($existing in $storedCertificates) { $store.Remove($existing) }
-        if ($store.Certificates.Find([Security.Cryptography.X509Certificates.X509FindType]::FindByThumbprint, $thumbprint, $false).Count -ne 0) { throw 'Owned synthetic CA cleanup did not complete.' }
-        Write-Host 'Owned synthetic CA absent from CurrentUser Root after cleanup.'
     }
 } finally {
     $store.Close()
     $store.Dispose()
     $certificate.Dispose()
 }
+# Reopen the ordinary store after closing the writer. No policy, registry, or
+# UNPROTECTED changes are used. The transport acceptance establishes actual trust.
+Write-Host 'Reopening ordinary LocalMachine Root to verify the exact owned CA state.'
+$verificationStore = [Security.Cryptography.X509Certificates.X509Store]::new('Root', 'LocalMachine')
+try {
+    $verificationStore.Open([Security.Cryptography.X509Certificates.OpenFlags]::ReadOnly -bor [Security.Cryptography.X509Certificates.OpenFlags]::OpenExistingOnly)
+    $verifiedCertificates = @($verificationStore.Certificates.Find([Security.Cryptography.X509Certificates.X509FindType]::FindByThumbprint, $thumbprint, $false))
+    if ($Action -eq 'Add') {
+        if ($verifiedCertificates.Count -eq 0) { throw 'The owned CA is absent after reopening ordinary LocalMachine Root.' }
+        foreach ($verified in $verifiedCertificates) {
+            if ([Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($verified.RawData)).ToLowerInvariant() -ne $sha256) { throw 'The reopened owned CA hash differs.' }
+        }
+        Write-Host 'Owned synthetic CA added only to LocalMachine Root on the disposable hosted runner.'
+    } else {
+        if ($verifiedCertificates.Count -ne 0) { throw 'Owned synthetic CA cleanup did not complete after reopening LocalMachine Root.' }
+        Write-Host 'Owned synthetic CA absent from LocalMachine Root after cleanup.'
+    }
+} finally { $verificationStore.Close(); $verificationStore.Dispose() }
