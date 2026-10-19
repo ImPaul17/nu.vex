@@ -1,0 +1,25 @@
+[package]
+name = "nuvex-server"
+version = "0.2.0"
+edition = "2021"
+rust-version = "1.89"
+publish = false
+license = "Apache-2.0"
+
+[workspace]
+
+[dependencies]
+argon2 = "=0.5.3"
+axum = { version = "=0.8.9", features = ["ws"] }
+chrono = { version = "=0.4.45", features = ["serde"] }
+ipnet = "=2.12.2"
+rand = "=0.8.5"
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.154"
+sha2 = "=0.10.9"
+sqlx = { version = "=0.8.6", default-features = false, features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "migrate", "macros"] }
+tokio = { version = "=1.53.3", features = ["macros", "rt-multi-thread", "net", "signal", "sync", "time"] }
+tower-http = { version = "=0.6.8", features = ["cors"] }
+tracing = "=0.1.44"
+tracing-subscriber = { version = "=0.3.23", features = ["env-filter"] }
+uuid = { version = "=1.28.0", features = ["v4", "serde"] }

@@ -1,0 +1,9 @@
+# Example for a trusted reverse proxy running on the Docker host.
+# Replace the domain, configure its DNS, and allow inbound 80/443.
+chat.your-domain.example {
+  reverse_proxy 127.0.0.1:8080 {
+    # Overwrite any client-supplied value. Configure Nginx's explicit trust
+    # fragment only after verifying the peer address of this host proxy.
+    header_up X-Real-IP {http.request.remote.host}
+  }
+}

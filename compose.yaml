@@ -1,0 +1,127 @@
+name: nuvex
+
+x-server-build: &server-build
+  context: .
+  dockerfile: infra/Dockerfile.server
+
+x-server-environment: &server-environment
+  NUVEX_DATABASE_URL: postgresql://nuvex:${NUVEX_DATABASE_PASSWORD:?Generate NUVEX_DATABASE_PASSWORD in .env}@database:5432/${NUVEX_DATABASE_NAME:-nuvex}
+  NUVEX_BIND: 0.0.0.0:3001
+  NUVEX_ALLOWED_ORIGIN: ${NUVEX_ALLOWED_ORIGIN:?Set the exact browser origin in .env}
+  NUVEX_INSECURE_DEV: ${NUVEX_INSECURE_DEV:-false}
+  NUVEX_REGISTRATION_OPEN: ${NUVEX_REGISTRATION_OPEN:-false}
+  NUVEX_MIGRATE_ON_START: "false"
+  NUVEX_TRUSTED_PROXIES: ${NUVEX_WEB_INTERNAL_IP:-172.29.251.10}/32
+
+services:
+  database:
+    image: postgres:17.11-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Generate POSTGRES_PASSWORD in .env}
+      NUVEX_DATABASE_PASSWORD: ${NUVEX_DATABASE_PASSWORD:?Generate NUVEX_DATABASE_PASSWORD in .env}
+      NUVEX_DATABASE_NAME: ${NUVEX_DATABASE_NAME:-nuvex}
+    volumes:
+      - database_data:/var/lib/postgresql/data
+      - ./infra/postgres-init.sh:/docker-entrypoint-initdb.d/10-nuvex.sh:ro
+    networks: [data]
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          pg_isready -h 127.0.0.1 -U postgres -d postgres &&
+          PGPASSWORD="$${NUVEX_DATABASE_PASSWORD}"
+          psql -h 127.0.0.1 -U nuvex -d "$${NUVEX_DATABASE_NAME}" -tAc 'SELECT 1' | grep -qx 1
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    pids_limit: 256
+    mem_limit: 1g
+    logging: &logging
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+
+  migrate:
+    image: nuvex-server:local
+    build: *server-build
+    command: [--migrate]
+    environment: *server-environment
+    depends_on:
+      database: {condition: service_healthy}
+    networks: [data]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 128
+    mem_limit: 512m
+    restart: "no"
+    logging: *logging
+
+  server:
+    image: nuvex-server:local
+    build: *server-build
+    environment: *server-environment
+    depends_on:
+      database: {condition: service_healthy}
+      migrate: {condition: service_completed_successfully}
+    networks:
+      data:
+      edge:
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 128
+    mem_limit: 512m
+    healthcheck:
+      test: [CMD, curl, --fail, --silent, --max-time, "3", http://127.0.0.1:3001/health/ready]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+    logging: *logging
+
+  web:
+    image: nuvex-web:local
+    build:
+      context: .
+      dockerfile: infra/Dockerfile.web
+    ports:
+      - ${NUVEX_WEB_BIND:-127.0.0.1}:${NUVEX_WEB_PORT:-8080}:8080
+    depends_on:
+      server: {condition: service_healthy, restart: true}
+    networks:
+      edge:
+        ipv4_address: ${NUVEX_WEB_INTERNAL_IP:-172.29.251.10}
+    volumes:
+      - ./infra/nginx-realip.conf:/etc/nginx/snippets/realip.conf:ro
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 128
+    mem_limit: 128m
+    healthcheck:
+      test: [CMD, wget, -q, --spider, http://127.0.0.1:8080/health/web]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    logging: *logging
+
+volumes:
+  database_data:
+
+networks:
+  edge:
+    ipam:
+      config:
+        - subnet: ${NUVEX_EDGE_SUBNET:-172.29.251.0/24}
+  data:
+    internal: true

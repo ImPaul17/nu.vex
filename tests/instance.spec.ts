@@ -1,0 +1,96 @@
+import { test, expect, type Page } from '@playwright/test';
+
+test('two real accounts exchange durable messages with isolated sessions and realtime delivery', async ({ browser }) => {
+  const id = Date.now().toString(36);
+  const alpha = await browser.newContext(); const beta = await browser.newContext();
+  const alice = await alpha.newPage(); const bob = await beta.newPage();
+  const exceptions: string[] = [];
+  for (const page of [alice, bob]) page.on('pageerror', (error) => exceptions.push(error.message));
+  async function register(page: Page, name: string, suffix: string) {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Crear una cuenta', exact: true }).click();
+    await page.getByLabel('Nombre visible', { exact: true }).fill(name);
+    await page.getByLabel('Nombre de usuario', { exact: true }).fill(`test_${id}_${suffix}`);
+    await page.getByLabel('Correo electrónico', { exact: true }).fill(`${id}.${suffix}@example.test`);
+    await page.getByLabel('Contraseña', { exact: true }).fill(`Test-${id}-password!`);
+    await page.getByRole('button', { name: 'Crear cuenta', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Tu primer espacio.' })).toBeVisible();
+  }
+  try {
+    await register(alice, 'Alice', 'a');
+    await alice.getByLabel('Nombre de la comunidad', { exact: true }).fill(`Equipo ${id}`);
+    await alice.locator('.entry-form').getByRole('button', { name: 'Crear comunidad', exact: true }).click();
+    await expect(alice.getByRole('heading', { name: 'general', exact: true })).toBeVisible();
+    await alice.locator('.community-heading').click();
+    await alice.getByRole('button', { name: 'Invitar al equipo', exact: true }).click();
+    await alice.getByRole('button', { name: 'Generar invitación', exact: true }).click();
+    const code = await alice.getByLabel('Código de invitación', { exact: true }).inputValue();
+    expect(code.length).toBeGreaterThanOrEqual(32);
+    await alice.keyboard.press('Escape');
+    await register(bob, 'Bob', 'b');
+    await bob.getByRole('button', { name: 'Tengo una invitación', exact: true }).click();
+    await bob.getByLabel('Código de invitación', { exact: true }).fill(code);
+    await bob.getByRole('button', { name: 'Unirme a la comunidad', exact: true }).click();
+    await expect(bob.getByRole('heading', { name: 'general', exact: true })).toBeVisible();
+    const first = `Hola Bob ${id} <img src=x onerror=alert(1)>`;
+    await alice.getByRole('textbox', { name: 'Escribir mensaje' }).fill(first);
+    await alice.getByRole('button', { name: 'Enviar mensaje', exact: true }).click();
+    await expect(alice.getByText(first, { exact: true })).toBeVisible();
+    await expect(bob.getByText(first, { exact: true })).toBeVisible();
+    await expect(bob.locator('.message-body img')).toHaveCount(0);
+    const reply = `Hola Alice ${id}`;
+    await bob.getByRole('textbox', { name: 'Escribir mensaje' }).fill(reply);
+    await bob.getByRole('button', { name: 'Enviar mensaje', exact: true }).click();
+    await expect(alice.getByText(reply, { exact: true })).toBeVisible();
+    await alice.reload(); await bob.reload();
+    await expect(alice.getByText(first, { exact: true })).toBeVisible();
+    await expect(bob.getByText(reply, { exact: true })).toBeVisible();
+    await expect(alice.getByText(reply, { exact: true })).toBeVisible();
+    await alice.screenshot({ path: 'test-results/instance-live.png', fullPage: true });
+    await bob.getByRole('textbox', { name: 'Escribir mensaje' }).fill(`Mensaje eliminable ${id}`);
+    await bob.getByRole('button', { name: 'Enviar mensaje', exact: true }).click();
+    const deletable = bob.locator('.message').filter({ hasText: `Mensaje eliminable ${id}` });
+    await expect(deletable).toBeVisible(); await deletable.hover();
+    await deletable.getByRole('button', { name: 'Eliminar mensaje', exact: true }).click();
+    await expect(alice.getByText(`Mensaje eliminable ${id}`, { exact: true })).toHaveCount(0);
+    await bob.getByRole('button', { name: 'Abrir ajustes', exact: true }).click();
+    await bob.getByRole('button', { name: /Cerrar sesión y cambiar/ }).click();
+    await expect(bob.getByRole('heading', { name: 'De vuelta con tu equipo.' })).toBeVisible();
+    await bob.reload(); await expect(bob.getByRole('heading', { name: 'De vuelta con tu equipo.' })).toBeVisible();
+    await expect(alice.getByText(first, { exact: true })).toBeVisible();
+    await bob.getByLabel('Correo electrónico', { exact: true }).fill(`${id}.b@example.test`);
+    await bob.getByLabel('Contraseña', { exact: true }).fill(`Test-${id}-password!`);
+    await bob.getByRole('button', { name: 'Iniciar sesión', exact: true }).click();
+    await expect(bob.getByText(first, { exact: true })).toBeVisible();
+    const afterLogin = `Sesión recuperada ${id}`;
+    await bob.getByRole('textbox', { name: 'Escribir mensaje' }).fill(afterLogin);
+    await bob.getByRole('button', { name: 'Enviar mensaje', exact: true }).click();
+    await expect(alice.getByText(afterLogin, { exact: true })).toBeVisible();
+    if (process.env.NUVEX_E2E_REMOTE_URL) {
+      await bob.getByRole('button', { name: 'Abrir ajustes', exact: true }).click();
+      await bob.getByRole('button', { name: /Cerrar sesión y cambiar/ }).click();
+      await bob.getByRole('button', { name: 'Cambiar', exact: true }).click();
+      await bob.getByLabel('Dirección de la instancia', { exact: true }).fill(process.env.NUVEX_E2E_REMOTE_URL);
+      await bob.getByRole('button', { name: 'Conectar a la instancia', exact: true }).click();
+      await expect(bob.getByRole('heading', { name: 'De vuelta con tu equipo.' })).toBeVisible();
+      await bob.getByLabel('Correo electrónico', { exact: true }).fill(`${id}.b@example.test`);
+      await bob.getByLabel('Contraseña', { exact: true }).fill(`Test-${id}-password!`);
+      const remoteLogin = bob.waitForResponse((response) => response.url() === `${process.env.NUVEX_E2E_REMOTE_URL}/api/v1/auth/login` && response.request().method() === 'POST');
+      await bob.getByRole('button', { name: 'Iniciar sesión', exact: true }).click();
+      const credentials = await (await remoteLogin).json() as { accessToken: string };
+      expect(credentials.accessToken.length).toBeGreaterThanOrEqual(32);
+      await expect(bob.getByText(first, { exact: true })).toBeVisible();
+      const remoteMessage = `Desde otra instancia web ${id}`;
+      await bob.getByRole('textbox', { name: 'Escribir mensaje' }).fill(remoteMessage);
+      await bob.getByRole('button', { name: 'Enviar mensaje', exact: true }).click();
+      await expect(alice.getByText(remoteMessage, { exact: true })).toBeVisible();
+      const stored = await bob.evaluate(() => JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage } }));
+      expect(stored).not.toContain(credentials.accessToken);
+      await bob.reload();
+      await expect(bob.getByRole('heading', { name: 'De vuelta con tu equipo.' })).toBeVisible();
+      await expect(bob.getByRole('textbox', { name: 'Escribir mensaje' })).toHaveCount(0);
+      await expect(alice.getByText(remoteMessage, { exact: true })).toBeVisible();
+    }
+    expect(exceptions).toEqual([]);
+  } finally { await alpha.close(); await beta.close(); }
+});

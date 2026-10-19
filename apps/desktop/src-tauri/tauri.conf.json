@@ -1,0 +1,44 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "nu.vex",
+  "version": "0.2.0",
+  "identifier": "org.nuvex.desktop",
+  "build": {
+    "beforeDevCommand": "npm --prefix ../.. run dev",
+    "beforeBuildCommand": "npm --prefix ../.. run build",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../../web/build"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [
+      {
+        "label": "main",
+        "title": "nu.vex",
+        "width": 1440,
+        "height": 940,
+        "minWidth": 390,
+        "minHeight": 640,
+        "resizable": true,
+        "decorations": true,
+        "backgroundColor": "#0B2E26"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; frame-src 'none'; form-action 'none'",
+      "devCsp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' ws://localhost:5173 ws://127.0.0.1:5173; object-src 'none'; base-uri 'none'; frame-src 'none'; form-action 'none'",
+      "capabilities": [
+        {
+          "identifier": "main-local-ui",
+          "description": "Local presentation only. No native commands or plugin permissions.",
+          "windows": ["main"],
+          "permissions": []
+        }
+      ]
+    }
+  },
+  "bundle": {
+    "active": false,
+    "icon": ["icons/icon.png", "icons/icon.ico"]
+  }
+}

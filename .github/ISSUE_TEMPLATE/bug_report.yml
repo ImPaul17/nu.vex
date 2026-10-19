@@ -1,0 +1,33 @@
+name: Bug report
+description: Report a reproducible problem in nu.vex.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: "For sensitive vulnerabilities, follow SECURITY.md instead of posting exploit details or secrets here. Use synthetic account/message data."
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+      description: Describe the concrete difference and whether you used a real instance or /demo.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Include the smallest useful example, with private data removed.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment and version
+      description: Commit/release, operating system, browser/desktop version, and relevant instance/deployment details. Do not include credentials or connection strings.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized logs or screenshots
+      description: Remove tokens, cookies, emails, private messages, and secrets before attaching.

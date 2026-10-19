@@ -1,0 +1,118 @@
+name: nu.vex checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  checks:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.14.0'
+          cache: npm
+      - run: npx --yes npm@11.21.1 ci
+      - run: npm run check
+      - run: npm test
+      - run: npm run build
+      - if: runner.os == 'Linux'
+        run: npx playwright install --with-deps chromium
+      - if: runner.os == 'Linux'
+        run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-results-${{ runner.os }}
+          path: test-results/
+  instance:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17.11-bookworm
+        env:
+          POSTGRES_USER: nuvex
+          POSTGRES_PASSWORD: nuvex-ci-disposable
+          POSTGRES_DB: nuvex_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd 'pg_isready -U nuvex -d nuvex_ci'
+          --health-interval 5s --health-timeout 5s --health-retries 15
+    env:
+      NUVEX_DATABASE_URL: postgres://nuvex:nuvex-ci-disposable@127.0.0.1:5432/nuvex_ci
+      NUVEX_INSECURE_DEV: 'true'
+      NUVEX_REGISTRATION_OPEN: 'true'
+      NUVEX_MIGRATE_ON_START: 'true'
+      NUVEX_ALLOWED_ORIGIN: http://127.0.0.1:5173
+      NUVEX_E2E_REMOTE_URL: http://127.0.0.1:3001
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.14.0'
+          cache: npm
+      - run: npx --yes npm@11.21.1 ci
+      - run: rustup toolchain install 1.99.1 --profile minimal --component clippy --component rustfmt
+      - run: cargo +1.99.1 fmt --manifest-path apps/server/Cargo.toml -- --check
+      - run: cargo +1.99.1 clippy --manifest-path apps/server/Cargo.toml --locked --all-targets -- -D warnings
+      - run: cargo +1.99.1 test --manifest-path apps/server/Cargo.toml --locked
+      - run: cargo +1.99.1 build --manifest-path apps/server/Cargo.toml --locked
+      - run: npm run test:server
+      - name: Start real instance
+        run: |
+          mkdir -p .cache
+          nohup apps/server/target/debug/nuvex-server > .cache/ci-server.log 2>&1 &
+          curl --fail --silent --retry 30 --retry-connrefused --retry-delay 1 http://127.0.0.1:3001/health/ready
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:instance
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: instance-test-results
+          path: |
+            test-results/
+            .cache/ci-server.log
+  compose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.14.0'
+          cache: npm
+      - run: npx --yes npm@11.21.1 ci
+      - name: Prepare isolated deployment and ephemeral credentials
+        run: node scripts/prepare-compose-env.mjs
+      - name: Validate Compose without exposing resolved secrets
+        run: docker compose config --quiet
+      - name: Build actual production images
+        run: docker compose build
+      - name: Start database, migrations, API, and Nginx
+        run: docker compose up --detach --wait --wait-timeout 180
+      - name: Verify real API, restart persistence, and backup restore
+        run: node scripts/verify-compose.mjs
+      - run: npx playwright install --with-deps chromium
+      - name: Verify browser sessions and realtime through Nginx
+        run: npm run test:instance
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: compose-verification-results
+          # Never upload environment files, database archives, or traces containing credentials.
+          path: |
+            test-results/**/*.png
+            .cache/verify-instance/**/result.json
+            .cache/compose-verification/summary.json
+          if-no-files-found: ignore
+      - name: Remove only the disposable CI deployment
+        if: always() && env.COMPOSE_PROJECT_NAME != ''
+        run: |
+          case "$COMPOSE_PROJECT_NAME" in
+            nuvex-ci-*) docker compose down --volumes --remove-orphans ;;
+            *) echo 'Refusing cleanup of an unexpected Compose project'; exit 1 ;;
+          esac

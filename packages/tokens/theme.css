@@ -1,0 +1,74 @@
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/Geist-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geist Pixel';
+  src: url('/fonts/GeistPixel-Square.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root, [data-theme='emerald'] {
+  color-scheme: dark;
+  --bg: #091e1a;
+  --rail: #0a211c;
+  --sidebar: #0e2822;
+  --surface: #12352b;
+  --surface-raised: #193d32;
+  --panel: #102c25;
+  --text: #e5fdf7;
+  --muted: #a0b9ad;
+  --subtle: #79988a;
+  --border: #a9e8c414;
+  --accent: #14d392;
+  --accent-text: #06291e;
+  --focus: #7ee6c0;
+  --accent-soft: color-mix(in srgb, var(--accent) 12%, transparent);
+  --hover: #c2f9de08;
+  --danger: #ffacac;
+  --radius: 12px;
+  --glass: .8;
+  --space-message: 17px;
+  --font-body: 'Geist', system-ui, sans-serif;
+  --font-pixel: 'Geist', system-ui, sans-serif;
+  --transition: 150ms ease;
+}
+[data-theme='midnight'] {
+  color-scheme: dark;
+  --bg: #13171e;
+  --rail: #10131a;
+  --sidebar: #181d26;
+  --surface: #202936;
+  --surface-raised: #283446;
+  --panel: #1b212c;
+  --text: #edf4fc;
+  --muted: #adbacc;
+  --subtle: #8f9db2;
+  --border: #bacde018;
+  --hover: #c2d9f808;
+}
+[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f2f8f4;
+  --rail: #dcebe2;
+  --sidebar: #e8f1eb;
+  --surface: #dcece2;
+  --surface-raised: #cfe5d8;
+  --panel: #eaf3ed;
+  --text: #133b2d;
+  --muted: #486658;
+  --subtle: #526f60;
+  --border: #1b4f3020;
+  --hover: #134c3008;
+  --danger: #a52d3a;
+  --focus: #097651;
+}
+[data-density='compact'] { --space-message: 9px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}

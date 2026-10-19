@@ -1,0 +1,17 @@
+[package]
+name = "nuvex-desktop"
+version = "0.2.0"
+license = "Apache-2.0"
+description = "nu.vex desktop shell"
+edition = "2021"
+publish = false
+
+[lib]
+name = "nuvex_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "=2.7.3", features = [] }
+
+[dependencies]
+tauri = { version = "=2.12.4", features = [] }

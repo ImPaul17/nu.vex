@@ -1,0 +1,37 @@
+{
+  "name": "nuvex",
+  "version": "0.2.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": "^22.14.0 || >=24.0.0",
+    "npm": ">=11.18.0 <12"
+  },
+  "packageManager": "npm@11.21.1",
+  "scripts": {
+    "dev": "npm run dev --workspace @nuvex/web",
+    "build": "npm run build --workspace @nuvex/web",
+    "preview": "npm run preview --workspace @nuvex/web",
+    "check": "npm run check --workspace @nuvex/web && tsc --noEmit -p tsconfig.json",
+    "test": "tsx --test packages/core/src/*.test.ts",
+    "test:e2e": "playwright test",
+    "test:instance": "playwright test --config playwright.instance.config.ts",
+    "test:server": "node scripts/verify-instance.mjs",
+    "server:dev": "cargo run --manifest-path apps/server/Cargo.toml",
+    "desktop:dev": "npm run dev --workspace @nuvex/desktop",
+    "desktop:build": "npm run build --workspace @nuvex/desktop"
+  },
+  "overrides": { "cookie": "0.7.2" },
+  "allowScripts": { "esbuild@0.28.2": true },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@types/node": "22.19.0",
+    "typescript": "5.9.3",
+    "tsx": "4.23.15"
+  }
+}
