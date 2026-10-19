@@ -1,8 +1,10 @@
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
+import { connectOrigins } from './connect-origins.mjs';
 
 const [, , input, output] = process.argv;
 if (!input || !output) throw new Error('Usage: node infra/write-csp.mjs <built index.html> <output.conf>');
+const connections = connectOrigins(process.env.NUVEX_CONNECT_ORIGINS ?? '');
 const html = readFileSync(input, 'utf8');
 const hashes = new Set();
 for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
@@ -17,7 +19,7 @@ const policy = [
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",
   "img-src 'self' data: blob:",
-  "connect-src 'self'",
+  `connect-src 'self'${connections.length ? ` ${connections.join(' ')}` : ''}`,
   "object-src 'none'",
   "frame-ancestors 'none'",
   "base-uri 'self'",

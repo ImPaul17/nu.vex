@@ -84,6 +84,11 @@ test('two real accounts exchange durable messages with isolated sessions and rea
       await bob.getByRole('textbox', { name: 'Escribir mensaje' }).fill(remoteMessage);
       await bob.getByRole('button', { name: 'Enviar mensaje', exact: true }).click();
       await expect(alice.getByText(remoteMessage, { exact: true })).toBeVisible();
+      await expect(bob.locator('.composer-caption')).toContainText('historial persistente');
+      const remoteReply = `Respuesta al cliente remoto ${id}`;
+      await alice.getByRole('textbox', { name: 'Escribir mensaje' }).fill(remoteReply);
+      await alice.getByRole('button', { name: 'Enviar mensaje', exact: true }).click();
+      await expect(bob.getByText(remoteReply, { exact: true })).toBeVisible();
       const stored = await bob.evaluate(() => JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage } }));
       expect(stored).not.toContain(credentials.accessToken);
       await bob.reload();

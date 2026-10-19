@@ -92,6 +92,8 @@ services:
     build:
       context: .
       dockerfile: infra/Dockerfile.web
+      args:
+        NUVEX_CONNECT_ORIGINS: ${NUVEX_CONNECT_ORIGINS:-}
     ports:
       - ${NUVEX_WEB_BIND:-127.0.0.1}:${NUVEX_WEB_PORT:-8080}:8080
     depends_on:

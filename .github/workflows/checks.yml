@@ -19,6 +19,7 @@ jobs:
       - run: npx --yes npm@11.21.1 ci
       - run: npm run check
       - run: npm test
+      - run: node --test infra/infra.test.mjs
       - run: npm run build
       - if: runner.os == 'Linux'
         run: npx playwright install --with-deps chromium

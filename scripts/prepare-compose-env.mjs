@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { appendFile, mkdir, writeFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
+import { delimiter, dirname, resolve } from 'node:path';
+import { repositoryRoot } from '../infra/db-tools.mjs';
 
 process.umask(0o077);
 const explicitPath = process.argv[2];
@@ -28,10 +29,26 @@ if (process.env.GITHUB_ACTIONS === 'true') {
   console.log(`::add-mask::${appPassword}`);
 }
 if (process.env.GITHUB_ENV) {
+  // This disposable override exposes the same Nginx on a second loopback port
+  // to verify real cross-origin bearer/WS connections under the built CSP.
+  // The production Compose file and its default connection policy stay closed.
+  const override = resolve(dirname(path), `nuvex-compose-${runId}.override.yaml`);
+  await writeFile(override, [
+    'services:',
+    '  web:',
+    '    build:',
+    '      args:',
+    '        NUVEX_CONNECT_ORIGINS: http://127.0.0.1:8081',
+    '    ports:',
+    '      - "127.0.0.1:8081:8080"',
+    '',
+  ].join('\n'), { flag: 'wx', mode: 0o600 });
   await appendFile(process.env.GITHUB_ENV, [
     `COMPOSE_ENV_FILES=${path}`,
     `COMPOSE_PROJECT_NAME=${project}`,
+    `COMPOSE_FILE=${[resolve(repositoryRoot, 'compose.yaml'), override].join(delimiter)}`,
     'NUVEX_E2E_BASE_URL=http://127.0.0.1:8080',
+    'NUVEX_E2E_REMOTE_URL=http://127.0.0.1:8081',
     '',
   ].join('\n'));
 }

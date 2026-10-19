@@ -53,7 +53,26 @@ Run a trusted HTTPS reverse proxy on the same host and proxy your chosen domain 
 
 Keep registration policy explicit and `NUVEX_INSECURE_DEV=false` on the HTTPS deployment. The backend uses Secure cookies outside local development and validates the exact browser origin for state-changing requests. The inner proxy does not trust client-supplied forwarded headers for authentication. Do not expose PostgreSQL or the raw API port to bypass the proxy/origin model.
 
-The shipped web CSP deliberately permits connections only to its own origin. Therefore the production web image supports a client and API on the same instance origin. Selecting an unrelated remote API from this web image is currently unsupported even if the server's CORS configuration allows it. A future public multi-instance web client needs a controlled connection policy; do not replace this with unrestricted `connect-src *`. Desktop remote-instance access likewise needs an explicitly reviewed native network/CSP design.
+### Connecting to other instances
+
+The production web CSP permits only its own origin by default. To let this web client connect to selected independent APIs, configure an explicit build-time allowlist in `.env`:
+
+```dotenv
+NUVEX_CONNECT_ORIGINS=https://chat.example.org,https://team.example.org:8443
+```
+
+Rebuild and recreate the web service after changing it:
+
+```sh
+docker compose build web
+docker compose up -d web
+```
+
+Each entry must be an exact HTTPS origin, without credentials, trailing slash, path, query, fragment, or wildcard. Local evaluation also accepts HTTP origins whose normalized host is `localhost`, `127.0.0.1`, or `[::1]`. The generator rejects invalid values before writing a policy, limits input to 16 entries and 2048 UTF-8 bytes, and adds the corresponding `wss://` or `ws://` connection source. It normalizes case/default ports and removes duplicates. This setting only extends `connect-src`; it does not permit remote scripts or change backend trust.
+
+The destination API must separately allow this **web client's origin** through its `NUVEX_ALLOWED_ORIGIN`. That setting accepts one exact browser origin per backend process. This build-time list grants no access to an instance: its own accounts, authentication, membership, permissions, and registration policy still apply. Changing the list requires rebuilding the web image; setting it only in a running container has no effect. Desktop remote-instance access needs its own reviewed native network/CSP configuration.
+
+The inner Nginx access log omits queries, request bodies, cookies, and authorization headers and redacts the entire suffix of `/api/v1/invites/`, including unknown invite routes. Standard Nginx error messages can include the original request line, so error logging is disabled only for `/api/v1/events` and `/api/v1/invites/<code>/join`; inspect the redacted HTTP status log and backend logs for these failures. Other REST error diagnostics remain enabled. Configure equivalent credential redaction in any outer proxy before retaining or sharing its logs.
 
 ### Trusted proxies and client rate limits
 
@@ -71,6 +90,7 @@ If the reserved Docker subnet conflicts with an existing network, choose another
 | `NUVEX_DATABASE_PASSWORD` | Required separate application's secret; 64+ hexadecimal characters |
 | `NUVEX_DATABASE_NAME` | Database name, default `nuvex`; lowercase identifier, maximum 63 characters |
 | `NUVEX_ALLOWED_ORIGIN` | Required exact HTTPS browser origin; HTTP loopback only with explicit development mode |
+| `NUVEX_CONNECT_ORIGINS` | Optional build-time web connection allowlist; empty means same-origin only; up to 16 HTTPS/loopback HTTP origins, 2048 UTF-8 bytes |
 | `NUVEX_INSECURE_DEV` | Defaults false; permits only local HTTP evaluation when true |
 | `NUVEX_REGISTRATION_OPEN` | Defaults false; opt in to local account registration |
 | `NUVEX_WEB_BIND`, `NUVEX_WEB_PORT` | Published web listener; defaults `127.0.0.1:8080` |

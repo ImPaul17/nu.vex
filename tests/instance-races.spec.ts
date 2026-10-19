@@ -107,8 +107,11 @@ async function trackConnections(page: Page) {
     window.WebSocket = new Proxy(NativeWebSocket, {
       construct(target, argumentsList) {
         const connection = Reflect.construct(target, argumentsList) as WebSocket;
-        sockets.add(connection);
-        connection.addEventListener('close', () => sockets.delete(connection));
+        // Leave Vite's development/HMR transport intact; closing it can reload the document.
+        if (new URL(connection.url).pathname === '/api/v1/events') {
+          sockets.add(connection);
+          connection.addEventListener('close', () => sockets.delete(connection));
+        }
         return connection;
       }
     });
@@ -231,4 +234,92 @@ test('pagination ignores a pre-resync page and remains available after workspace
   await expect(pagination).toBeVisible();
   await pagination.click();
   await expect(page.getByText(oldest, { exact: true })).toBeVisible();
+});
+
+test('a failed reconnect resync retries and converges a missed deletion without reloading', async ({ page, context, baseURL }) => {
+  const account = await seedAccount(context, baseURL, 'retry');
+  const channel = account.community.channels[0];
+  const deleted = await seedMessage(context, baseURL, channel.id, `Borrado mientras desconectado ${randomUUID()}`);
+  let connections = 0;
+  let navigations = 0;
+  const receivedMessages: string[] = [];
+  const exceptions: string[] = [];
+  page.on('pageerror', (error) => exceptions.push(error.message));
+  page.on('framenavigated', (frame) => { if (frame === page.mainFrame()) navigations += 1; });
+  page.on('websocket', (socket) => {
+    if (new URL(socket.url()).pathname !== '/api/v1/events') return;
+    connections += 1;
+    socket.on('framereceived', ({ payload }) => {
+      try {
+        const event = JSON.parse(typeof payload === 'string' ? payload : payload.toString('utf8'));
+        if (event.type === 'message.created' && typeof event.message?.content === 'string') receivedMessages.push(event.message.content);
+      } catch { /* Only application JSON text frames are relevant to this assertion. */ }
+    });
+  });
+  await trackConnections(page);
+  const firstSocket = page.waitForEvent('websocket', { predicate: (socket) => new URL(socket.url()).pathname === '/api/v1/events' });
+  await openWorkspace(page, account);
+  const originalSocket = await firstSocket;
+  const initialNavigations = navigations;
+  await expect(page.getByText(deleted.content, { exact: true })).toBeVisible();
+
+  const deletionCommitted = deferred<void>();
+  let delayedTicket = false;
+  const ticketRoute = (url: URL) => url.pathname === '/api/v1/events/ticket';
+  const holdTicket = async (route: Route) => {
+    if (!delayedTicket && route.request().method() === 'POST') {
+      delayedTicket = true;
+      // Even on a slow runner, reconnection cannot precede the real deletion.
+      await deletionCommitted.promise;
+    }
+    await route.continue();
+  };
+  const failedResync = deferred<void>();
+  let abortedBootstraps = 0;
+  const bootstrapRoute = (url: URL) => url.pathname === '/api/v1/bootstrap';
+  const failOneBootstrap = async (route: Route) => {
+    if (route.request().method() === 'GET' && abortedBootstraps === 0) {
+      abortedBootstraps += 1;
+      await route.abort('failed');
+      failedResync.resolve();
+    } else await route.continue();
+  };
+  await page.route(ticketRoute, holdTicket);
+  await page.route(bootstrapRoute, failOneBootstrap);
+  try {
+    const disconnected = originalSocket.waitForEvent('close');
+    const closed = await page.evaluate(() => {
+      let count = 0;
+      const sockets = (window as Window & { __nuvexRaceSockets?: Set<WebSocket> }).__nuvexRaceSockets;
+      for (const socket of sockets ?? []) {
+        if (socket.readyState === WebSocket.OPEN) { socket.close(1000, 'Regression: miss a deletion'); count += 1; }
+      }
+      return count;
+    });
+    expect(closed).toBeGreaterThan(0);
+    await disconnected;
+    const removed = await context.request.delete(`/api/v1/channels/${channel.id}/messages/${deleted.id}`, { headers: { Origin: origin(baseURL) } });
+    expect(removed.status()).toBe(204);
+    // The closed stream missed this event: only a successful reconciliation can remove it.
+    await expect(page.getByText(deleted.content, { exact: true })).toBeVisible();
+    deletionCommitted.resolve();
+    await failedResync.promise;
+    await expect.poll(() => connections).toBeGreaterThanOrEqual(3);
+    await expect(page.getByText(deleted.content, { exact: true })).toHaveCount(0);
+    await expect(page.locator('.composer-caption')).toContainText('historial persistente');
+    expect(abortedBootstraps).toBe(1);
+
+    const sent = `Enviar y recibir tras recuperar ${randomUUID()}`;
+    await page.getByRole('textbox', { name: 'Escribir mensaje' }).fill(sent);
+    await page.getByRole('button', { name: 'Enviar mensaje', exact: true }).click();
+    await expect(page.getByText(sent, { exact: true })).toBeVisible();
+    // Verify the committed WebSocket echo as well as the sender's HTTP result.
+    await expect.poll(() => receivedMessages).toContain(sent);
+    expect(navigations).toBe(initialNavigations);
+    expect(exceptions).toEqual([]);
+  } finally {
+    deletionCommitted.resolve();
+    await page.unroute(ticketRoute, holdTicket);
+    await page.unroute(bootstrapRoute, failOneBootstrap);
+  }
 });

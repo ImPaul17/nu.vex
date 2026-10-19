@@ -32,6 +32,36 @@ assert.equal(page.status, 200, 'Nginx must serve the built application.');
 const csp = page.headers.get('content-security-policy') ?? '';
 const scriptPolicy = csp.split(';').find((directive) => directive.trim().startsWith('script-src ')) ?? '';
 assert.ok(scriptPolicy.includes('sha256-') && !scriptPolicy.includes("'unsafe-inline'"), 'The production web server must serve a generated strict script policy.');
+const connectionPolicy = csp.split(';').find((directive) => directive.trim().startsWith('connect-src ')) ?? '';
+const remoteURL = process.env.NUVEX_E2E_REMOTE_URL;
+if (remoteURL) {
+  assert.equal(remoteURL, 'http://127.0.0.1:8081', 'Only the isolated CI loopback remote probe is permitted.');
+  assert.ok(connectionPolicy.includes('http://127.0.0.1:8081') && connectionPolicy.includes('ws://127.0.0.1:8081'), 'The built CSP must permit the explicit API and WebSocket probe origins.');
+  const remote = await fetch(`${remoteURL}/api/v1/instance`, { headers: { Origin: parsedURL.origin }, signal: AbortSignal.timeout(5000) });
+  assert.equal(remote.status, 200, 'The secondary Nginx binding must proxy the actual API.');
+  assert.equal(remote.headers.get('access-control-allow-origin'), parsedURL.origin, 'The remote API must allow exactly the frontend origin.');
+}
+
+// Deliberately invented, unissued credentials: never print their values or log
+// output. These unauthenticated requests create no accounts, invites, or data.
+const inviteProbe = randomUUID().replaceAll('-', '');
+const ticketProbe = randomUUID().replaceAll('-', '') + randomUUID().replaceAll('-', '');
+const logSince = new Date(Date.now() - 1000).toISOString();
+const inviteResponse = await fetch(`${parsedURL.origin}/api/v1/invites/${inviteProbe}/join`, {
+  method: 'POST', headers: { Origin: parsedURL.origin }, signal: AbortSignal.timeout(5000),
+});
+assert.equal(inviteResponse.status, 401, 'An unauthenticated synthetic invite must be rejected.');
+const ticketResponse = await fetch(`${parsedURL.origin}/api/v1/events?ticket=${ticketProbe}`, {
+  headers: { Origin: parsedURL.origin }, signal: AbortSignal.timeout(5000),
+});
+assert.ok([400, 401, 403, 426].includes(ticketResponse.status), 'A non-WebSocket request with an invented ticket must be rejected.');
+await delay(250);
+const privateWebLogs = captureDocker(['logs', '--no-color', '--since', logSince, 'web']);
+assert.ok(privateWebLogs.includes('/api/v1/invites/[redacted]'), 'The real Nginx access log must record a redacted invite route.');
+assert.ok(privateWebLogs.includes('/api/v1/events'), 'The real Nginx access log must record the ticket endpoint without its query.');
+assert.ok(!privateWebLogs.includes(inviteProbe), 'Nginx logs exposed the synthetic invite credential.');
+assert.ok(!privateWebLogs.includes(ticketProbe), 'Nginx logs exposed the synthetic WebSocket credential.');
+console.log('PASS Nginx invite/ticket credential redaction in actual container logs.');
 
 // Reuse the same wire-contract acceptance as native verification, including a
 // real Compose service restart. No mock API or host Rust binary is involved.
@@ -76,6 +106,7 @@ const rowCounts = Object.fromEntries(before.map((line) => {
 }));
 await writeFile(resolve(output, 'summary.json'), JSON.stringify({
   ok: true, project, origin: parsedURL.origin, strictWebCsp: true,
+  explicitRemoteConnectionPolicy: Boolean(remoteURL), nginxCredentialRedaction: true,
   applicationRoleRestricted: true,
   sourceUnchanged: true, restoredDatabase: restored, tableFingerprintsMatch: true, rowCounts,
 }, null, 2), { mode: 0o600 });

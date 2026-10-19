@@ -8,11 +8,13 @@ COPY packages/core/package.json ./packages/core/package.json
 COPY packages/tokens/package.json ./packages/tokens/package.json
 RUN npx --yes npm@11.21.1 ci
 COPY . .
+ARG NUVEX_CONNECT_ORIGINS=""
 RUN npm run build && node infra/write-csp.mjs apps/web/build/index.html /tmp/csp.conf
 
 FROM nginx:1.30.6-alpine@sha256:970364228b1e4f932abc22d321932816782cca8a20b85a77552a7cfe9acfb3b5 AS runtime
 COPY infra/nginx.conf /etc/nginx/nginx.conf
 COPY infra/nginx-realip.conf /etc/nginx/snippets/realip.conf
+COPY infra/nginx-api-proxy.conf /etc/nginx/snippets/api-proxy.conf
 COPY --from=build /tmp/csp.conf /etc/nginx/snippets/csp.conf
 COPY --from=build /src/apps/web/build /usr/share/nginx/html
 COPY LICENSE NOTICE THIRD_PARTY_NOTICES.md /usr/share/doc/nuvex/

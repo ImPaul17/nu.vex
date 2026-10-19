@@ -34,7 +34,7 @@ The production web build is written to `apps/web/build`. Latest checks passed wi
 
 Demo users, presence, and message history are sample data only in the explicit demo. Its messages/communities/channels are ephemeral and do not synchronize between users. Real mode lists members visible through joined communities; live presence and a roster scoped to the selected community remain planned.
 
-Real accounts belong to the selected independently operated instance. A company can host its own nu.vex server/domain. Existing corporate identity-provider login requires the separately planned OIDC/SSO integration; an arbitrary company website is not a nu.vex instance. The production web container supports same-origin API connections; arbitrary remote instance connections require a future controlled CSP/transport configuration. Voice/video, uploads, plugins, and distribution readiness remain in the release ledger.
+Real accounts belong to the selected independently operated instance. A company can host its own nu.vex server/domain. Existing corporate identity-provider login requires the separately planned OIDC/SSO integration; an arbitrary company website is not a nu.vex instance. The production web container defaults to same-origin API connections; a validated build-time allowlist can enable selected external API/WebSocket origins, with matching destination-server trust. See [connection configuration](docs/self-hosting.md#connecting-to-other-instances). Voice/video, uploads, plugins, and distribution readiness remain in the release ledger.
 
 ## Repository map
 
@@ -52,7 +52,7 @@ tests/                  Browser integration tests
 logo-*                  Original supplied brand assets and editable PSD sources
 ```
 
-The root uses npm workspaces and a single JavaScript lockfile. The Rust server has its own Cargo manifest/lockfile. `compose.yaml` combines web, API, explicit migration startup, and a private persistent database. Container execution still requires verification with Docker.
+The root uses npm workspaces and a single JavaScript lockfile. The Rust applications have separate Cargo manifests/lockfiles. `compose.yaml` combines web, API, explicit migration startup, and a private persistent database. The [first complete CI run](https://github.com/ImPaul17/nu.vex/actions/runs/39193292317) verified the messaging stack, container recovery, and browser flows. Later changes need their own runner results.
 
 ## Desktop source
 

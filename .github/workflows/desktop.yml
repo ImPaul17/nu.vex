@@ -1,0 +1,77 @@
+name: nu.vex desktop compile
+
+on:
+  push:
+    paths:
+      - 'apps/desktop/**'
+      - 'apps/web/**'
+      - 'packages/**'
+      - 'package*.json'
+      - '.npmrc'
+      - '.github/workflows/desktop.yml'
+  pull_request:
+    paths:
+      - 'apps/desktop/**'
+      - 'apps/web/**'
+      - 'packages/**'
+      - 'package*.json'
+      - '.npmrc'
+      - '.github/workflows/desktop.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compile:
+    name: Compile (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            toolchain: 1.99.1-x86_64-pc-windows-msvc
+          - os: ubuntu-24.04
+            toolchain: '1.99.1'
+          - os: macos-15
+            toolchain: '1.99.1'
+    env:
+      RUSTUP_TOOLCHAIN: ${{ matrix.toolchain }}
+      CARGO_TERM_COLOR: always
+      CARGO_BUILD_JOBS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.14.0'
+          cache: npm
+      - name: Install Linux WebKit and native prerequisites
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends libwebkit2gtk-4.1-dev build-essential pkg-config curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+      - name: Verify Apple command-line tools
+        if: runner.os == 'macOS'
+        run: xcode-select --print-path
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install ${{ matrix.toolchain }} --profile minimal
+      - name: Record actual native host and toolchain
+        run: |
+          rustup show
+          rustc --version --verbose
+          cargo --version
+      - name: Install locked frontend dependencies
+        run: npx --yes npm@11.21.1 ci
+      - name: Inspect Tauri native prerequisites
+        working-directory: apps/desktop
+        run: node ../../node_modules/@tauri-apps/cli/tauri.js info
+      - name: Compile desktop source without bundling or publishing
+        working-directory: apps/desktop
+        # The first -- passes --locked to Cargo. The configured hook builds web assets.
+        run: node ../../node_modules/@tauri-apps/cli/tauri.js build --ci --no-bundle -- --locked

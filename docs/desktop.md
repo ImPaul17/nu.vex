@@ -4,11 +4,13 @@
 `apps/web`. It uses the operating system's title bar, resize controls, and webview.
 The web application does not draw imitation window controls.
 
-This milestone provides the source scaffold. Native compilation and runtime
-behavior have **not** been verified. The initial `tauri info` check parsed the
-configuration successfully and found WebView2 on Windows, but Rust, Cargo,
-rustup, and the Microsoft C++ build tools/SDK were unavailable. There are no
-desktop installers or signed release artifacts yet.
+This milestone provides the source scaffold and a locked Rust dependency graph.
+Native compilation and runtime behavior have **not** been verified. The initial
+`tauri info` inspection found WebView2 while Rust/Cargo and the Microsoft C++
+build tools/SDK were unavailable. A repository-local Rust/GNU toolchain was
+subsequently prepared for backend checks and desktop lockfile generation; it
+does not supply the MSVC prerequisites for a supported Windows Tauri build.
+There are no desktop installers or signed release artifacts yet.
 
 ## Development
 
@@ -37,7 +39,8 @@ npm exec --workspace @nuvex/desktop -- tauri info
 read its environment diagnostics before attempting a build.
 
 The CLI starts the root `npm run dev` command, which serves only the web workspace,
-then opens `http://localhost:5173` in the native window. Keep that port available.
+then opens `http://127.0.0.1:5173` in the native window, matching the web development
+listener. Keep that port available.
 The Tauri hooks run in `apps/desktop`; `npm --prefix ../..` selects the repository
 root explicitly. The root `dev` script must remain web-only to avoid recursion.
 
@@ -49,13 +52,43 @@ npm run desktop:build
 
 The build hook runs the root web build and embeds `apps/web/build`. This follows
 Tauri's [static SvelteKit integration](https://v2.tauri.app/start/frontend/sveltekit/).
-The application has no embedded Node.js server and does not host the future Rust
+The application has no embedded Node.js server and does not host the Rust
 communication server. Docker deployment is a separate server concern.
 
-The JavaScript CLI and direct Rust dependencies are pinned. Generate and commit
-`apps/desktop/src-tauri/Cargo.lock` on the first successful native build, then use
-`cargo check --locked` from that directory to validate the resolved Rust graph.
-Until that lockfile exists, native transitive dependency resolution is not pinned.
+The JavaScript CLI and direct Rust dependencies are pinned. The generated
+`apps/desktop/src-tauri/Cargo.lock` fixes 407 external packages across the native
+platforms. It was generated with Cargo 1.99.1 and successfully read through
+`cargo metadata --locked --offline --no-deps`; this resolves metadata without
+compiling the native application. Commit lockfile changes with intentional
+dependency updates and use `--locked` for native builds.
+
+## Native compilation CI
+
+The separate [desktop compile workflow](../.github/workflows/desktop.yml) is
+prepared for `windows-2022`, `ubuntu-24.04`, and `macos-15` hosted runners. It uses
+Rust 1.99.1, explicitly selects the MSVC toolchain on Windows, installs Linux
+WebKit/GTK build prerequisites, checks Apple's command-line tools, and records
+the actual Rust host. Linux/macOS use the runner's native host without assuming
+an architecture. Runner labels and architectures follow the
+[GitHub runner reference](https://docs.github.com/en/actions/reference/runners/github-hosted-runners).
+
+The workflow installs npm dependencies with `npx --yes npm@11.21.1 ci` and invokes
+the local pinned Tauri CLI from `apps/desktop`:
+
+```sh
+node ../../node_modules/@tauri-apps/cli/tauri.js build --ci --no-bundle -- --locked
+```
+
+The configured build hook first builds the static client. `--no-bundle` skips
+installers, and `--locked` is forwarded to Cargo; see the
+[official CLI reference](https://v2.tauri.app/reference/cli/#build). The workflow
+has read-only repository permissions and no release or artifact-upload step.
+It runs for relevant source/configuration changes and can be started manually.
+
+This CI definition has not yet produced a recorded successful native build.
+A future compile success will verify source compilation on that runner; it will
+not establish native window behavior, account/instance connectivity, packaging,
+signing, or update support. Runtime and distribution checks remain separate.
 
 ## Security boundary
 
