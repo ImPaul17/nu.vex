@@ -82,11 +82,18 @@ test('test artifacts, unknown packages and mismatched manifest provenance are re
   f = fixture(); f.messages[0].target.kind = ['test']; assert.throws(() => analyzeNativeBuild(f.input()), /target kind/);
 });
 
-test('metadata-only packages stay excluded and missing selected artifacts cannot be hidden', () => {
+test('metadata-only packages stay excluded and are counted instead of claimed as compiled', () => {
   let f = fixture(); f.nodes[0].deps = f.nodes[0].deps.filter((edge) => edge.pkg !== f.dev.id);
-  assert.ok(!analyzeNativeBuild(f.input()).packages.some((entry) => entry.name === 'dev-only'));
+  const plain = analyzeNativeBuild(f.input());
+  assert.ok(!plain.packages.some((entry) => entry.name === 'dev-only'));
+  assert.equal(plain.metadataOnlyPackages, 0);
+  // Cargo names optional dependencies that a concrete build never activates, so
+  // a selected package without a captured artifact is excluded, not fatal.
   f = fixture(); f.nodes[0].deps.push({ name: 'dev-only', pkg: f.dev.id, dep_kinds: [{ kind: null, target: null }] });
-  assert.throws(() => analyzeNativeBuild(f.input()), /lacks a captured compilation artifact/);
+  const overApproximated = analyzeNativeBuild(f.input());
+  assert.equal(overApproximated.metadataOnlyPackages, 1);
+  assert.ok(!overApproximated.packages.some((entry) => entry.name === 'dev-only'));
+  assert.equal(overApproximated.packages.length, 5);
   f = fixture(); f.messages.splice(-1, 0, f.artifact(f.dev)); assert.throws(() => analyzeNativeBuild(f.input()), /outside the selected non-dev/);
 });
 

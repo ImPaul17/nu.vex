@@ -243,7 +243,8 @@ async function main() {
     scope: {
       target, profile: 'release', installersProduced: false, binariesPublished: false,
       claim: 'Packages observed in Cargo compilation artifacts, classified with locked platform-filtered metadata; exact upstream notice files are candidates for review.',
-      roleMeaning: 'Dependency-graph roles and observed custom-build artifacts. This does not identify final linker-retained compilation units or every bundled native component.',
+      roleMeaning: 'Dependency-graph roles and observed custom-build artifacts. Metadata-only packages this build did not compile are excluded and counted separately. This does not identify final linker-retained compilation units or every bundled native component.',
+      metadataOnlyPackages: observed.metadataOnlyPackages,
       completeLinkedGraph: false, licenseApproval: false,
     },
     build: {

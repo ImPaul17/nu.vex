@@ -125,7 +125,11 @@ export function analyzeNativeBuild({ cargoOutput, metadata, lockText, expectedTa
     ensure(queue.length <= 100_000, 'Cargo dependency traversal exceeds the supported bound.');
   }
   for (const id of observed) ensure(roles.has(id), 'A compiled package is outside the selected non-dev dependency graph.');
-  for (const id of roles.keys()) ensure(observed.has(id), 'Selected dependency lacks a captured compilation artifact.');
+  // cargo metadata's resolve graph also lists optional dependencies that this
+  // build never activated (for example tauri's disabled `tray-icon` edge), so it
+  // over-approximates the compiled set. Captured artifacts stay authoritative:
+  // the difference is excluded from the inventory and counted for the record.
+  const metadataOnly = [...roles.keys()].filter((id) => !observed.has(id));
   // A package's own build.rs is a host compilation, without turning its normal
   // target dependencies into build-script dependencies.
   for (const artifact of artifacts) {
@@ -171,6 +175,7 @@ export function analyzeNativeBuild({ cargoOutput, metadata, lockText, expectedTa
   ensure(selected.some((entry) => entry.name === 'tauri' && entry.features.includes('custom-protocol')), 'The captured build is missing Tauri custom-protocol.');
   return {
     target: expectedTarget, rootId, executablePath, packages: selected, buildScripts,
+    metadataOnlyPackages: metadataOnly.length,
     freshArtifacts: artifacts.filter((entry) => entry.fresh).length,
     compiledArtifacts: artifacts.filter((entry) => !entry.fresh).length,
   };
