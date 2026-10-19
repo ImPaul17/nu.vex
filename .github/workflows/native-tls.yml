@@ -117,6 +117,7 @@ jobs:
       - name: Generate and validate private synthetic certificates with existing OpenSSL
         run: node scripts/ci/tls-certificates.mjs prepare
       - name: Trust only the owned synthetic CA for the current hosted-runner user
+        timeout-minutes: 2
         run: ./scripts/ci/windows-tls-trust.ps1 -Action Add
       - name: Build real instance service
         run: cargo build --manifest-path apps/server/Cargo.toml --locked

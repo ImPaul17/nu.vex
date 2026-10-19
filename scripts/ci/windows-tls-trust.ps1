@@ -76,7 +76,68 @@ try {
             @{version = 1; store = 'CurrentUser/Root'; thumbprint = $thumbprint; sha256 = $sha256; runId = $env:GITHUB_RUN_ID} |
                 ConvertTo-Json | Out-File -LiteralPath $marker -Encoding utf8 -NoClobber
         }
-        if ($storedCertificates.Count -eq 0) { $store.Add($certificate) }
+        if ($storedCertificates.Count -eq 0) {
+            # X509Store.Add can display a native protected-root consent dialog.
+            # This API explicitly documents a no-UI import into the supplied store.
+            # https://learn.microsoft.com/en-us/windows/win32/api/cryptuiapi/nf-cryptuiapi-cryptuiwizimport
+            # Structure/constant layout: Microsoft's published cryptuiapi.h.
+            Add-Type -TypeDefinition @'
+using System;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
+
+namespace Nuvex.Ci {
+    public static class NoUiCertificateImport {
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct ImportSource {
+            public uint Size;
+            public uint SubjectChoice;
+            public IntPtr CertificateContext;
+            public uint Flags;
+            [MarshalAs(UnmanagedType.LPWStr)] public string Password;
+        }
+
+        [DllImport("cryptui.dll", ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool CryptUIWizImport(uint flags, IntPtr parent, string title,
+            ref ImportSource source, IntPtr destinationStore);
+
+        public static void Import(X509Certificate2 certificate, X509Store store) {
+            if (certificate.HasPrivateKey || store.Location != StoreLocation.CurrentUser || store.Name != "Root")
+                throw new InvalidOperationException("Only a public certificate in CurrentUser Root is permitted.");
+            var source = new ImportSource {
+                Size = (uint)Marshal.SizeOf<ImportSource>(),
+                SubjectChoice = 2, // CRYPTUI_WIZ_IMPORT_SUBJECT_CERT_CONTEXT
+                CertificateContext = certificate.Handle,
+                Flags = 0,
+                Password = string.Empty
+            };
+            const uint flags = 0x00000001 | 0x00010000 | 0x00020000;
+            // CRYPTUI_WIZ_NO_UI | NO_CHANGE_DEST_STORE | ALLOW_CERT
+            bool success = CryptUIWizImport(flags, IntPtr.Zero, null, ref source, store.StoreHandle);
+            int error = Marshal.GetLastWin32Error();
+            GC.KeepAlive(certificate);
+            GC.KeepAlive(store);
+            if (!success) throw new Win32Exception(error, "The owned no-UI certificate import failed.");
+        }
+    }
+}
+'@
+            [Nuvex.Ci.NoUiCertificateImport]::Import($certificate, $store)
+        }
+        # Reopen through the ordinary protected store, without altered policies
+        # or UNPROTECTED flags. The real transport acceptance verifies TLS trust.
+        $verificationStore = [Security.Cryptography.X509Certificates.X509Store]::new('Root', 'CurrentUser')
+        try {
+            $verificationStore.Open([Security.Cryptography.X509Certificates.OpenFlags]::ReadOnly)
+            $verifiedCertificates = @($verificationStore.Certificates.Find([Security.Cryptography.X509Certificates.X509FindType]::FindByThumbprint, $thumbprint, $false))
+            if ($verifiedCertificates.Count -eq 0) { throw 'The owned CA is absent after reopening the ordinary CurrentUser Root store.' }
+            foreach ($verified in $verifiedCertificates) {
+                if ([Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($verified.RawData)).ToLowerInvariant() -ne $sha256) { throw 'The reopened owned CA hash differs.' }
+            }
+        } finally { $verificationStore.Close(); $verificationStore.Dispose() }
         Write-Host 'Owned synthetic CA added only to CurrentUser Root on the hosted runner.'
     } else {
         foreach ($existing in $storedCertificates) { $store.Remove($existing) }

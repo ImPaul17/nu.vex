@@ -287,8 +287,8 @@ fn passed(label: &str) {
 #[ignore = "Requires the explicit private fixture, trusted ephemeral CA, real API and PostgreSQL provided by verify-native-tls.mjs"]
 async fn production_https_wss_enforce_certificates_origins_and_redirect_boundaries() {
     let fixture = Fixture::read();
-    let control = Control::new(&fixture);
     let (transport, handle) = selected(&fixture.valid_origin);
+    let control = Control::new(&fixture);
     let document = transport.document().unwrap();
     assert!(
         transport
