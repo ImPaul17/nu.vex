@@ -2,6 +2,7 @@ name: nu.vex desktop compile
 
 on:
   push:
+    branches: [main]
     paths:
       - 'apps/desktop/**'
       - 'apps/web/**'

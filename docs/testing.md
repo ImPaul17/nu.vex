@@ -93,6 +93,61 @@ The separate `compose` job in `.github/workflows/checks.yml` executes on an Ubun
 
 The job sets `NUVEX_E2E_BASE_URL=http://127.0.0.1:8080` for `npm run test:instance`. With this variable, Playwright uses the existing deployment and does **not** start Vite. The ephemeral CI override also publishes the same Nginx on loopback port 8081, builds the web image with `NUVEX_CONNECT_ORIGINS=http://127.0.0.1:8081`, and sets `NUVEX_E2E_REMOTE_URL` to that origin. The `c0f8cda` Compose run passed all five browser scenarios in 17.9 seconds, including the real remote-origin bearer/WebSocket flow through the production image's controlled CSP. This is HTTP loopback verification on a disposable runner; external HTTPS and an operator's real proxy topology require separate deployment checks. See [current verification](verification-current.md) for subsequent receipts and the separate native workflow.
 
+## Linux native runtime acceptance
+
+The new `.github/workflows/desktop-runtime.yml` prepares a real Linux application
+test, separate from both browser suites and the three-platform compilation job.
+It pins Rust 1.99.1 and `tauri-driver` 2.1.0, installs WebKitWebDriver/Xvfb on the
+disposable Ubuntu runner, and builds bundled frontend assets in the native debug
+binary. It runs formatting, unit tests, and Clippy for both the transport crate
+and Tauri adapter. Cargo's target directory is shared within that job to reuse
+compilation; dependency installation and Rust builds use committed locks.
+
+`scripts/verify-desktop.mjs` uses Node's built-in fetch to drive real WebDriver
+HTTP commands, without WDIO or mocked invoke calls. It starts only owned API
+processes on ports 3001/3002 and connects them to two distinct migrated test
+databases. The native application registers/joins through its actual UI and
+exchanges events with an independent originless-bearer HTTP/WebSocket account.
+The flow checks process restart/history, logout/relogin, document refresh and
+application restart without persisted credentials, instance isolation, blocked direct webview fetch,
+and real IPC route/generation/window-permission/token-response boundaries. Direct
+fetch uses no-cors and omitted credentials and must produce both rejection and a
+`securitypolicyviolation` event for `connect-src` and the requested destination;
+Node checks the same endpoint before/after. This distinguishes the expected CSP
+denial from a CORS-only failure. Native appearance's **Ver JSON** opens a
+read-only theme document validated with the existing shared parser, without
+credentials or a download. After a real WebDriver refresh, it requires a new
+native document nonce, rejects the old nonce even with a larger selection order,
+and then logs in through the normal UI to prove the current connection survived.
+The integrated flow currently reports eight groups.
+
+The workflow supplies `NUVEX_DESKTOP_DATABASE_URL` and
+`NUVEX_DESKTOP_SECOND_DATABASE_URL` for dedicated loopback PostgreSQL databases.
+The script refuses missing/equal database configurations or occupied test ports.
+Optional `NUVEX_SERVER_BIN`, `NUVEX_DESKTOP_BIN`, and `NUVEX_TAURI_DRIVER_BIN`
+select already compiled/installed binaries. `NUVEX_DESKTOP_API_PORT` and
+`NUVEX_DESKTOP_DRIVER_PORT` change the two respective consecutive port pairs.
+It never installs native host prerequisites or runs against a production database
+implicitly. Synthetic test records remain; cleanup terminates only processes
+the harness started. Logs/results stay under ignored `.cache/verify-desktop/`.
+CI uploads only the redacted result summary and a bounded PNG of the synthetic
+workspace, skipping screenshots with credential/invitation forms or dialogs.
+It does not upload process logs, database configuration, or native binaries.
+
+After preparing the explicit test databases, binaries, native driver, and display
+dependencies, the Linux invocation is:
+
+```sh
+xvfb-run -a --server-args='-screen 0 1600x1200x24' node scripts/verify-desktop.mjs
+```
+
+At this update the script/workflow are implementation awaiting execution, not a
+successful native runtime result. Linux debug acceptance does not verify release
+HTTPS configuration, Windows/macOS runtime, installers, signing, or updates.
+See the [native transport ADR](adr/0001-native-instance-transport.md),
+[official manual driver setup](https://v2.tauri.app/develop/tests/webdriver/manual-setup/),
+and [official CI guide](https://v2.tauri.app/develop/tests/webdriver/ci/).
+
 ## Manual interface review
 
 Use both keyboard and pointer navigation. Check long content, empty states, readable contrast, focus indicators, modal dismissal/focus return, reduced motion, supported themes, valid and invalid imports, and narrow/wide layouts. Exercise screen-reader labeling where a screen reader is available. Imported palettes can be syntactically safe and still have poor contrast.

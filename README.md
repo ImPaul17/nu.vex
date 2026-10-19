@@ -41,7 +41,7 @@ Real accounts belong to the selected independently operated instance. A company 
 ```text
 apps/
   web/                  SvelteKit + Svelte 5 + strict TypeScript frontend
-  desktop/              Optional Tauri 2 native shell scaffold
+  desktop/              Tauri 2 host and restricted Rust instance transport
   server/               Rust/Axum service, PostgreSQL migrations, independent Cargo crate
 packages/
   core/                 Shared models, demo data, theme validation
@@ -56,13 +56,13 @@ The root uses npm workspaces and a single JavaScript lockfile. The Rust applicat
 
 ## Desktop source
 
-The Tauri scaffold shares the web frontend. It requires Rust/Cargo and the native prerequisites for the target OS. On Windows these include the MSVC build tools and WebView2; Linux and macOS have their own prerequisites. Follow the [official Tauri prerequisite guide](https://v2.tauri.app/start/prerequisites/) before running:
+The Tauri host shares the web frontend. It requires Rust/Cargo and the native prerequisites for the target OS. On Windows these include the MSVC build tools and WebView2; Linux and macOS have their own prerequisites. Follow the [official Tauri prerequisite guide](https://v2.tauri.app/start/prerequisites/) before running:
 
 ```sh
 npm run desktop:dev
 ```
 
-The initial environment did not expose Rust, Cargo, or Docker on `PATH`. A [repository-local Rust/GNU and PostgreSQL toolchain](docs/toolchain-local.md) subsequently verified the native backend. [Native CI](https://github.com/ImPaul17/nu.vex/actions/runs/39194068585) compiled the Tauri source for Windows x64, Linux x64, and macOS ARM64. Native account transport/runtime checks, installers, and signing remain separate work; signed desktop packages are not yet available.
+The initial environment did not expose Rust, Cargo, or Docker on `PATH`. A [repository-local Rust/GNU and PostgreSQL toolchain](docs/toolchain-local.md) subsequently verified the native backend. [Earlier native CI](https://github.com/ImPaul17/nu.vex/actions/runs/39194068585) compiled the Tauri source for Windows x64, Linux x64, and macOS ARM64. The next native milestone adds a [restricted Rust instance transport](docs/adr/0001-native-instance-transport.md), memory-only credentials, and real Linux UI acceptance. That new runtime verification is pending; the earlier compilation receipt does not certify the new transport. Installers, signing, and Windows/macOS interactive runtime remain separate work.
 
 ## Direction
 

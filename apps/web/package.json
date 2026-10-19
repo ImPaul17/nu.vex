@@ -10,7 +10,11 @@
     "preview": "vite preview --host 127.0.0.1 --port 4173 --strictPort",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
   },
-  "dependencies": { "@nuvex/core": "*", "@nuvex/tokens": "*" },
+  "dependencies": {
+    "@nuvex/core": "*",
+    "@nuvex/tokens": "*",
+    "@tauri-apps/api": "2.12.4"
+  },
   "devDependencies": {
     "@sveltejs/adapter-static": "3.0.10",
     "@sveltejs/kit": "2.70.3",

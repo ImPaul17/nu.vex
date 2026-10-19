@@ -4,6 +4,7 @@
   import ChatShell from '$lib/features/ChatShell.svelte';
   import Icon from '$lib/components/Icon.svelte';
   import { ApiError, InstanceApi, decodeEvent, normalizeInstance, type InstanceInfo } from '$lib/services/api';
+  import { isNative, type EventSocket } from '$lib/services/native';
   import type { ConnectionStatus, WorkspaceActions, WorkspaceSnapshot } from '$lib/services/types';
 
   let stage = $state<'loading' | 'connect' | 'login' | 'register'>('loading');
@@ -21,7 +22,7 @@
   let invitation = $state('');
   let onboardingTab = $state<'create' | 'join'>('create');
   let api = $state<InstanceApi | null>(null);
-  let socket: WebSocket | null = null;
+  let socket: EventSocket | null = null;
   let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
   let retryAttempt = 0;
   let activeChannelId: string | null = null;
@@ -35,10 +36,11 @@
   const message = (cause: unknown) => cause instanceof Error ? cause.message : 'No se pudo completar la operación.';
 
   onMount(() => {
-    try { instanceAddress = normalizeInstance(localStorage.getItem('nuvex:last-instance') ?? window.location.origin); }
-    catch { instanceAddress = window.location.origin; }
-    void connect(true);
-    return () => { closed = true; stopSocket(); };
+    try { instanceAddress = normalizeInstance(localStorage.getItem('nuvex:last-instance') ?? (isNative ? '' : window.location.origin)); }
+    catch { instanceAddress = isNative ? '' : window.location.origin; }
+    if (instanceAddress) void connect(true);
+    else stage = 'connect';
+    return () => { closed = true; stopSocket(); void api?.dispose().catch(() => {}); };
   });
   function stopSocket() { socketGeneration++; clearTimeout(reconnectTimer); const previous = socket; socket = null; if (previous) { previous.onclose = null; previous.close(); } connectionStatus = 'offline'; }
   function current(epoch: number, connection: InstanceApi) { return !closed && epoch === sessionEpoch && api === connection; }
@@ -57,10 +59,13 @@
   async function connect(restore = false) {
     if (busy) return; busy = true; error = ''; stopSocket();
     const epoch = ++sessionEpoch;
+    let candidate: InstanceApi | null = null;
     try {
-      const candidate = new InstanceApi(instanceAddress);
+      candidate = new InstanceApi(instanceAddress);
+      await api?.dispose();
+      api = null;
       const details = await candidate.instance();
-      if (epoch !== sessionEpoch || closed) return;
+      if (epoch !== sessionEpoch || closed) { await candidate.dispose(); return; }
       api = candidate; instance = details; instanceAddress = candidate.baseUrl;
       try { localStorage.setItem('nuvex:last-instance', instanceAddress); } catch { /* Connecting still works without browser storage. */ }
       stage = 'login';
@@ -68,7 +73,7 @@
         try { await enterWorkspace(); }
         catch (cause) { if (!(cause instanceof ApiError && cause.status === 401)) throw cause; }
       }
-    } catch (cause) { api = null; instance = null; stage = 'connect'; error = message(cause); }
+    } catch (cause) { await candidate?.dispose().catch(() => {}); api = null; instance = null; stage = 'connect'; error = message(cause); }
     finally { busy = false; }
   }
   async function authenticate(event: SubmitEvent) {
@@ -233,7 +238,7 @@
             <button class="primary-button" type="submit" disabled={busy}>{busy ? 'Conectando…' : stage === 'register' ? 'Crear cuenta' : 'Iniciar sesión'} <Icon name="arrow" size={17} /></button>
           </form>
           {#if instance?.registrationOpen}<p class="entry-switch">{stage === 'register' ? '¿Ya tienes cuenta?' : '¿Primera vez aquí?'} <button onclick={() => { stage = stage === 'register' ? 'login' : 'register'; error = ''; password = ''; }}>{stage === 'register' ? 'Iniciar sesión' : 'Crear una cuenta'}</button></p>{:else}<p class="privacy-note">El registro está cerrado. Contacta con quien administra esta instancia.</p>{/if}
-          {#if api?.crossOrigin}<p class="privacy-note">Acceso a una instancia externa. La sesión se conserva en memoria y tendrás que iniciar sesión otra vez si recargas.</p>{/if}
+          {#if api?.crossOrigin}<p class="privacy-note">{isNative ? 'La sesión se guarda en la memoria de la aplicación.' : 'Acceso a una instancia externa. La sesión se conserva en memoria.'} Tendrás que iniciar sesión otra vez si recargas.</p>{/if}
         {/if}
         {#if error}<p class="entry-error" role="alert">{error}</p>{/if}
       </section>

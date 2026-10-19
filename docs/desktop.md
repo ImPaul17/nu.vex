@@ -4,10 +4,11 @@
 `apps/web`. It uses the operating system's title bar, resize controls, and webview.
 The web application does not draw imitation window controls.
 
-This milestone provides the desktop source and a locked Rust dependency graph.
-Native compilation passed on Windows, Linux, and macOS in the
+This milestone provides the desktop source, a locked Rust dependency graph, and
+a restricted native instance transport under implementation. Earlier native
+compilation passed on Windows, Linux, and macOS in the
 [CI run for `6620201`](https://github.com/ImPaul17/nu.vex/actions/runs/39194068585).
-Native runtime behavior remains **unverified**. The initial
+The new transport's native runtime behavior remains **unverified**. The initial
 `tauri info` inspection found WebView2 while Rust/Cargo and the Microsoft C++
 build tools/SDK were unavailable. A repository-local Rust/GNU toolchain was
 subsequently prepared for backend checks and desktop lockfile generation; it
@@ -58,8 +59,8 @@ The application has no embedded Node.js server and does not host the Rust
 communication server. Docker deployment is a separate server concern.
 
 The JavaScript CLI and direct Rust dependencies are pinned. The generated
-`apps/desktop/src-tauri/Cargo.lock` fixes 407 external packages across the native
-platforms. It was generated with Cargo 1.99.1 and successfully read through
+`apps/desktop/src-tauri/Cargo.lock` fixes the native dependency graph across
+platforms. Its initial version was generated with Cargo 1.99.1 and read through
 `cargo metadata --locked --offline --no-deps`; this resolves metadata without
 compiling the native application. Commit lockfile changes with intentional
 dependency updates and use `--locked` for native builds.
@@ -103,26 +104,64 @@ account/instance connectivity, other CPU architectures, installers, signing,
 or update support. The workflow did not upload or publish those binaries.
 Runtime and distribution checks remain separate.
 
-## Security boundary
+## Native instance connection milestone
 
-The host registers no Rust application commands and includes no Tauri plugins.
-Its one explicit capability grants no permissions. The global public Tauri API
-is disabled. OS features such as filesystem access, shell execution, clipboard,
-notifications, and automatic updates must be added individually with a concrete
-permission model and tests.
+The [accepted transport decision](adr/0001-native-instance-transport.md) selects a
+Rust mediator for one chosen instance per local window. It exposes known API
+operations and bounded event packets, stores bearer credentials only in native
+memory, strips tokens from IPC authentication responses, and invalidates stale
+connections on instance/account changes. It does not introduce keychain storage,
+generic HTTP requests, or unrestricted OS integrations.
 
-The production CSP loads local scripts, fonts, and styles and blocks network
-connections, frames, objects, and form submissions. Inline styles support the
-design-token controls; arbitrary scripts remain blocked. The development CSP
-additionally permits the local Vite websocket and development inline scripts.
-Tauri's CSP nonce/hash injection remains enabled. See the official
+The six custom commands are `nuvex_document`, `nuvex_connect`, `nuvex_request`,
+`nuvex_events`, `nuvex_events_control`, and `nuvex_dispose`. The read-only document
+handshake returns a Rust-owned UUID captured once by the loaded frontend module.
+Reload/reset rotates that nonce. Connection selection validates the nonce and
+selection order atomically, so queued work from an old document cannot displace
+the current connection with a larger old order. Request/stream generations guard
+later responses; handles and nonces are state identifiers rather than credentials.
+
+Reload/disposal clears the local credential reference; it does not revoke the
+server session. Explicit successful logout revokes that session, which otherwise
+has its server-defined seven-day expiry. The current mediator uses direct
+connections and does not honor system/environment HTTP proxies.
+
+The current webview blocks downloads and `window.open`. Native appearance
+therefore offers **Ver JSON**: a read-only, validated theme document you can copy
+and save manually as a `.json` file. This uses no OS save/clipboard permissions;
+the web client's **Exportar** download is unchanged. Platform certificate
+validation is used, but corporate CA/proxy integration has not been verified.
+
+The native webview loads local scripts/fonts/styles and permits only the IPC
+network endpoints it needs. It cannot directly fetch arbitrary instance APIs.
+Rust performs the actual REST/WebSocket connections with TLS verification and
+redirects disabled. Release builds require HTTPS; debug builds allow loopback
+HTTP for development/test instances. The native transport supplies no fabricated
+Origin or browser cookie; its server contract uses explicit originless bearer
+authentication and audience-bound short-lived realtime tickets.
+
+Only the local main window receives the custom command permissions. Remote
+navigation, frames, form submissions, arbitrary native commands, and general
+filesystem/shell access remain restricted. Themes cannot acquire these grants.
+The global public Tauri API remains disabled. Follow the official
 [capability model](https://v2.tauri.app/security/capabilities/) and
-[CSP guidance](https://v2.tauri.app/security/csp/).
+[CSP guidance](https://v2.tauri.app/security/csp/); a native mediator still needs
+caller validation and does not eliminate the impact of compromised UI code.
 
-The messaging MVP will need a reviewed CSP change for the user's selected HTTPS
-instance and WSS endpoint. Do not solve that by granting unrestricted network
-access or loading remote application code into a privileged webview. Native
-capabilities must never be granted to community themes or plugins.
+The new [Linux runtime workflow](../.github/workflows/desktop-runtime.yml) builds
+the real debug application, runs transport/adapter formatting, unit tests and
+Clippy, and launches `scripts/verify-desktop.mjs` through WebKitWebDriver,
+`tauri-driver` 2.1.0, and Xvfb. Node uses the real WebDriver protocol without a
+WDIO dependency or mocked IPC. Two isolated PostgreSQL databases and owned API
+processes exercise native UI accounts, bidirectional events, restart/persistence,
+logout, real document refresh with an old-nonce rejection followed by successful
+UI login, instance changes, storage boundaries, a no-cors fetch rejected with an
+actual `connect-src` CSP violation, copyable theme JSON, and rejected IPC
+operations. See [testing](testing.md#linux-native-runtime-acceptance).
+
+This workflow definition and test source are not a passed native runtime run.
+Runtime verification is pending, and Windows/macOS runtime, production HTTPS,
+installers, signing, and updates remain separate from Linux debug acceptance.
 
 ## Branding and distribution
 

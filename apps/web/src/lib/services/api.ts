@@ -1,5 +1,6 @@
 import type { Channel, Community, Member, Message } from '@nuvex/core';
 import type { WorkspaceSnapshot } from './types';
+import { createNativeTransport, isNative, NativeTransportError, type EventSocket } from './native';
 
 export class ApiError extends Error {
   constructor(message: string, public readonly status: number, public readonly code: string) { super(message); }
@@ -53,25 +54,35 @@ export class InstanceApi {
   private credentialEpoch = 0;
   readonly baseUrl: string;
   readonly crossOrigin: boolean;
+  private readonly native;
   constructor(baseUrl: string, currentOrigin = window.location.origin) {
     this.baseUrl = normalizeInstance(baseUrl, currentOrigin);
-    this.crossOrigin = this.baseUrl !== currentOrigin;
+    this.crossOrigin = isNative || this.baseUrl !== currentOrigin;
+    this.native = isNative ? createNativeTransport(this.baseUrl) : null;
   }
   private async request(path: string, options: RequestInit = {}): Promise<Record<string, unknown>> {
     const headers = new Headers(options.headers);
     if (options.body) headers.set('Content-Type', 'application/json');
     if (this.accessToken) headers.set('Authorization', `Bearer ${this.accessToken}`);
-    let response: Response;
+    let status: number;
+    let value: unknown;
     const epoch = this.credentialEpoch;
     try {
-      response = await fetch(`${this.baseUrl}/api/v1${path}`, { ...options, headers, credentials: this.crossOrigin ? 'omit' : 'include', cache: 'no-store', signal: AbortSignal.timeout(15_000) });
+      if (this.native) {
+        const response = await this.native.request(path, { method: options.method, body: typeof options.body === 'string' ? options.body : undefined });
+        status = response.status;
+        value = response.payload;
+      } else {
+        const response = await fetch(`${this.baseUrl}/api/v1${path}`, { ...options, headers, credentials: this.crossOrigin ? 'omit' : 'include', cache: 'no-store', signal: AbortSignal.timeout(15_000) });
+        status = response.status;
+        value = status === 204 ? {} : await response.json().catch(() => ({}));
+      }
     } catch { throw new ApiError('No se puede conectar con la instancia. Revisa su dirección, certificado y configuración de acceso.', 0, 'unreachable'); }
-    const value: unknown = response.status === 204 ? {} : await response.json().catch(() => ({}));
     const payload = object(value);
-    if (!response.ok) {
+    if (status < 200 || status >= 300) {
       const error = payload.error && typeof payload.error === 'object' ? object(payload.error) : {};
-      if (response.status === 401 && epoch === this.credentialEpoch) this.accessToken = null;
-      throw new ApiError(typeof error.message === 'string' ? error.message : `La solicitud falló (${response.status}).`, response.status, typeof error.code === 'string' ? error.code : 'request_failed');
+      if (status === 401 && epoch === this.credentialEpoch) this.accessToken = null;
+      throw new ApiError(typeof error.message === 'string' ? error.message : `La solicitud falló (${status}).`, status, typeof error.code === 'string' ? error.code : 'request_failed');
     }
     return payload;
   }
@@ -84,7 +95,7 @@ export class InstanceApi {
     const body = { email: input.email, password: input.password, ...(mode === 'register' ? { displayName: input.displayName, handle: input.handle } : {}), ...(this.crossOrigin ? { transport: 'bearer' } : {}) };
     const data = await this.request(`/auth/${mode}`, { method: 'POST', body: JSON.stringify(body) });
     if (epoch !== this.credentialEpoch) throw new ApiError('La sesión ha cambiado.', 409, 'stale_session');
-    if (this.crossOrigin) {
+    if (this.crossOrigin && !this.native) {
       const token = text(data.accessToken, 512);
       if (token.length < 32) throw new Error('La instancia no admite el acceso remoto seguro.');
       this.accessToken = token;
@@ -113,7 +124,12 @@ export class InstanceApi {
     catch (cause) { if (!(cause instanceof ApiError && cause.status === 401)) throw cause; }
     if (epoch === this.credentialEpoch) this.accessToken = null;
   }
-  async eventSocket(): Promise<WebSocket> {
+  async dispose(): Promise<void> { await this.native?.dispose(); }
+  async eventSocket(): Promise<EventSocket> {
+    if (this.native) {
+      try { return await this.native.eventSocket(); }
+      catch (cause) { if (cause instanceof NativeTransportError) throw new ApiError(cause.message, cause.status, cause.code); throw cause; }
+    }
     const url = new URL(`${this.baseUrl}/api/v1/events`); url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
     const ticket = await this.request('/events/ticket', { method: 'POST' }); url.searchParams.set('ticket', text(ticket.ticket, 256));
     return new WebSocket(url);

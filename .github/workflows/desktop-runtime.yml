@@ -1,0 +1,121 @@
+name: nu.vex desktop runtime
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/desktop/**'
+      - 'apps/web/**'
+      - 'apps/server/**'
+      - 'packages/**'
+      - 'package*.json'
+      - '.npmrc'
+      - 'scripts/verify-desktop.mjs'
+      - '.github/workflows/desktop-runtime.yml'
+  pull_request:
+    paths:
+      - 'apps/desktop/**'
+      - 'apps/web/**'
+      - 'apps/server/**'
+      - 'packages/**'
+      - 'package*.json'
+      - '.npmrc'
+      - 'scripts/verify-desktop.mjs'
+      - '.github/workflows/desktop-runtime.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-runtime-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    name: Linux native UI and instance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:17.11-bookworm
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: nuvex-desktop-ci-admin-only
+          POSTGRES_DB: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 15
+    env:
+      RUSTUP_TOOLCHAIN: '1.99.1'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_TERM_COLOR: always
+      CARGO_TARGET_DIR: ${{ github.workspace }}/.cache/native-runtime-target
+      NUVEX_SERVER_BIN: ${{ github.workspace }}/.cache/native-runtime-target/debug/nuvex-server
+      NUVEX_DESKTOP_BIN: ${{ github.workspace }}/.cache/native-runtime-target/debug/nuvex-desktop
+      # Disposable runner databases only. No production credentials are used.
+      NUVEX_DESKTOP_DATABASE_URL: postgres://nuvex_native:nuvex-desktop-ci-app-only@127.0.0.1:5432/nuvex_native_primary
+      NUVEX_DESKTOP_SECOND_DATABASE_URL: postgres://nuvex_native:nuvex-desktop-ci-app-only@127.0.0.1:5432/nuvex_native_secondary
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.14.0'
+          cache: npm
+      - name: Install native webview and display prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends libwebkit2gtk-4.1-dev build-essential pkg-config curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev webkit2gtk-driver xvfb xauth
+          command -v WebKitWebDriver
+      - name: Install pinned Rust and analysis components
+        run: rustup toolchain install 1.99.1 --profile minimal --component rustfmt --component clippy
+      - name: Record actual native host
+        run: |
+          rustc --version --verbose
+          cargo --version
+      - name: Install locked frontend dependencies
+        run: npx --yes npm@11.21.1 ci
+      - name: Check native formatting
+        run: |
+          cargo fmt --manifest-path apps/desktop/src-tauri/Cargo.toml -- --check
+          cargo fmt --manifest-path apps/desktop/transport/Cargo.toml -- --check
+      - name: Build real native debug application with bundled frontend
+        working-directory: apps/desktop
+        run: node ../../node_modules/@tauri-apps/cli/tauri.js build --debug --ci --no-bundle -- --locked
+      - name: Test native mediation and Tauri adapter
+        run: |
+          cargo test --manifest-path apps/desktop/transport/Cargo.toml --locked
+          cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml --locked
+      - name: Check native Clippy warnings
+        run: |
+          cargo clippy --manifest-path apps/desktop/transport/Cargo.toml --locked --all-targets -- -D warnings
+          cargo clippy --manifest-path apps/desktop/src-tauri/Cargo.toml --locked --all-targets -- -D warnings
+      - name: Build real instance service
+        run: cargo build --manifest-path apps/server/Cargo.toml --locked
+      - name: Create isolated databases with a non-admin application role
+        run: |
+          docker exec -i '${{ job.services.postgres.id }}' psql --username=postgres --dbname=postgres --set=ON_ERROR_STOP=1 <<'SQL'
+          CREATE ROLE nuvex_native LOGIN PASSWORD 'nuvex-desktop-ci-app-only' NOSUPERUSER NOCREATEDB NOCREATEROLE;
+          CREATE DATABASE nuvex_native_primary OWNER nuvex_native;
+          CREATE DATABASE nuvex_native_secondary OWNER nuvex_native;
+          REVOKE ALL ON DATABASE nuvex_native_primary FROM PUBLIC;
+          REVOKE ALL ON DATABASE nuvex_native_secondary FROM PUBLIC;
+          SQL
+      - name: Install pinned external native driver into the disposable runner
+        run: |
+          cargo install tauri-driver --version 2.1.0 --locked --root "$RUNNER_TEMP/nuvex-native-driver"
+          echo "NUVEX_TAURI_DRIVER_BIN=$RUNNER_TEMP/nuvex-native-driver/bin/tauri-driver" >> "$GITHUB_ENV"
+      - name: Exercise actual Linux application and real instances
+        run: xvfb-run -a --server-args='-screen 0 1600x1200x24' node scripts/verify-desktop.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-linux-verification
+          # Only bounded synthetic-workspace screenshots and redacted summaries.
+          # Never upload raw process logs, database URLs, tokens, or native binaries.
+          path: |
+            .cache/verify-desktop/**/native.png
+            .cache/verify-desktop/**/result.json
+          if-no-files-found: ignore
+          retention-days: 7
