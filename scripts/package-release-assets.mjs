@@ -34,7 +34,11 @@ async function filesUnder(root) {
       const path = join(directory, entry.name);
       // AppImage bundling adds these desktop integration entries beside the
       // image. They are inputs to the installer, not distributable assets.
-      if (entry.name === '.DirIcon' || entry.name.endsWith('.desktop')) continue;
+      if (entry.name === '.DirIcon' || entry.name.endsWith('.desktop') ||
+          entry.name === 'nuvex-desktop.png' || entry.name === 'bundle_dmg.sh') continue;
+      // Tauri's Linux AppImage bundler can expose its icon as a symlink.
+      // It is metadata for the bundle and must not become a release asset.
+      if (entry.isSymbolicLink()) continue;
       // A DMG build uses an intermediate .app directory. The DMG is the
       // distributable artifact; do not mistake its internal files for release
       // assets or copy the bundle's private contents.
