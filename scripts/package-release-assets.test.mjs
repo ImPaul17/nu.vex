@@ -62,3 +62,36 @@ test('ignores the macOS intermediate app bundle when packaging its DMG', async (
   assert.equal(files.length, 1);
   assert.match(files[0].name, /\.dmg$/);
 });
+
+test('ignores bundler metadata beside Linux and macOS installers', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'nuvex-release-'));
+  const linuxBundle = join(root, 'linux-bundle');
+  const macBundle = join(root, 'mac-bundle');
+  await mkdir(linuxBundle);
+  await mkdir(macBundle);
+  await writeFile(join(linuxBundle, 'nuvex-desktop.png'), 'icon metadata');
+  await writeFile(join(linuxBundle, 'nuvex-desktop.desktop'), 'desktop metadata');
+  await writeFile(join(linuxBundle, 'nuvex_0.2.0_amd64.AppImage'), 'appimage');
+  await writeFile(join(macBundle, 'bundle_dmg.sh'), 'dmg helper');
+  await writeFile(join(macBundle, 'nu.vex_0.2.0_aarch64.dmg'), 'dmg');
+
+  const linuxFiles = await packageReleaseAssets({
+    bundleRoot: linuxBundle,
+    output: join(root, 'linux-output'),
+    platform: 'linux-x64',
+    target: 'x86_64-unknown-linux-gnu',
+  });
+  const macFiles = await packageReleaseAssets({
+    bundleRoot: macBundle,
+    output: join(root, 'mac-output'),
+    platform: 'macos-arm64',
+    target: 'aarch64-apple-darwin',
+  });
+
+  assert.deepEqual(linuxFiles.map((file) => file.name), [
+    'nuvex-linux-x64-nuvex_0.2.0_amd64.AppImage',
+  ]);
+  assert.deepEqual(macFiles.map((file) => file.name), [
+    'nuvex-macos-arm64-nu.vex_0.2.0_aarch64.dmg',
+  ]);
+});

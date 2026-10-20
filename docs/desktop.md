@@ -123,8 +123,8 @@ artifacts can be inspected before publication.
 For the first downloadable Alpha, create and push:
 
 ```sh
-git tag v0.2.0-alpha.4
-git push origin v0.2.0-alpha.4
+git tag v0.2.0-alpha.5
+git push origin v0.2.0-alpha.5
 ```
 
 The resulting release is unsigned. Windows SmartScreen and macOS Gatekeeper
