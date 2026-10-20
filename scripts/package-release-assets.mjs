@@ -43,9 +43,11 @@ async function filesUnder(root) {
       // distributable artifact; do not mistake its internal files for release
       // assets or copy the bundle's private contents.
       if (entry.isDirectory()) {
-        if (!entry.name.endsWith('.app')) await visit(path);
+        if (entry.name.endsWith('.app') || entry.name.endsWith('.AppDir')) continue;
+        await visit(path);
         continue;
       }
+      if (entry.name === 'icon.icns') continue;
       if (entry.isFile()) result.push(path);
       else fail(`bundle contains a non-regular entry: ${entry.name}`);
     }

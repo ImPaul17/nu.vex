@@ -72,7 +72,10 @@ test('ignores bundler metadata beside Linux and macOS installers', async () => {
   await writeFile(join(linuxBundle, 'nuvex-desktop.png'), 'icon metadata');
   await writeFile(join(linuxBundle, 'nuvex-desktop.desktop'), 'desktop metadata');
   await writeFile(join(linuxBundle, 'nuvex_0.2.0_amd64.AppImage'), 'appimage');
+  await mkdir(join(linuxBundle, 'nu.vex.AppDir'));
+  await writeFile(join(linuxBundle, 'nu.vex.AppDir', 'AppRun'), 'appimage helper');
   await writeFile(join(macBundle, 'bundle_dmg.sh'), 'dmg helper');
+  await writeFile(join(macBundle, 'icon.icns'), 'icon metadata');
   await writeFile(join(macBundle, 'nu.vex_0.2.0_aarch64.dmg'), 'dmg');
 
   const linuxFiles = await packageReleaseAssets({
