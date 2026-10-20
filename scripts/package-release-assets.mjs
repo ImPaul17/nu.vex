@@ -32,6 +32,9 @@ async function filesUnder(root) {
   async function visit(directory) {
     for (const entry of await readdir(directory, { withFileTypes: true })) {
       const path = join(directory, entry.name);
+      // AppImage bundling adds these desktop integration entries beside the
+      // image. They are inputs to the installer, not distributable assets.
+      if (entry.name === '.DirIcon' || entry.name.endsWith('.desktop')) continue;
       // A DMG build uses an intermediate .app directory. The DMG is the
       // distributable artifact; do not mistake its internal files for release
       // assets or copy the bundle's private contents.
