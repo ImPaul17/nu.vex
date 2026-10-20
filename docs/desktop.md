@@ -8,12 +8,18 @@ This milestone provides the desktop source, a locked Rust dependency graph, and
 a restricted native instance transport. For PR #3 source `7f9f459`,
 [release compilation passed on Windows, Linux, and macOS](https://github.com/ImPaul17/nu.vex/actions/runs/39202625762),
 and [real Windows and Linux debug UI acceptance passed](https://github.com/ImPaul17/nu.vex/actions/runs/39202625822).
-macOS interactive runtime and public HTTPS remain unverified. The initial
+macOS interactive runtime and public HTTPS remain unverified. The repository now
+also contains the reproducible Alpha packaging workflow, with the initial
+downloadable release intentionally unsigned. The initial
 `tauri info` inspection found WebView2 while Rust/Cargo and the Microsoft C++
 build tools/SDK were unavailable. A repository-local Rust/GNU toolchain was
 subsequently prepared for backend checks and desktop lockfile generation; it
 does not supply the MSVC prerequisites for a supported Windows Tauri build.
-There are no desktop installers or signed release artifacts yet.
+The workflow creates a draft prerelease from an explicit `v0.2.0-alpha.N` tag.
+It produces Windows x64 NSIS/MSI installers, Linux x64 AppImage/DEB packages,
+and a macOS Apple Silicon DMG. Every upload includes `SHA256SUMS.txt`,
+`RELEASE-MANIFEST.json`, `LICENSE`, `NOTICE`, and `THIRD_PARTY_NOTICES.md`.
+Signing, notarization, and updater metadata are separate gates.
 
 ## Development
 
@@ -103,6 +109,28 @@ compilation for those hosts; it does not establish native window behavior,
 account/instance connectivity, other CPU architectures, installers, signing,
 or update support. The workflow did not upload or publish those binaries.
 Runtime and distribution checks remain separate.
+
+## Alpha release packaging
+
+The [desktop release workflow](../.github/workflows/release.yml) runs only for
+an explicit `v*` tag or a manual dispatch with an existing Alpha tag. It uses
+the repository-pinned Node and Rust toolchains, generates platform icon
+derivatives from the supplied `logo-app.png`, builds only the requested native
+bundles, verifies the expected installer extensions, and records SHA-256
+digests. The workflow then creates or updates a **draft prerelease** so the
+artifacts can be inspected before publication.
+
+For the first downloadable Alpha, create and push:
+
+```sh
+git tag v0.2.0-alpha.3
+git push origin v0.2.0-alpha.3
+```
+
+The resulting release is unsigned. Windows SmartScreen and macOS Gatekeeper
+may warn; users should verify `SHA256SUMS.txt` before installing. The desktop
+client still requires a separately operated nu.vex instance and does not bundle
+the server.
 
 ## Native instance connection milestone
 
