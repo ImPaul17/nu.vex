@@ -14,7 +14,7 @@ Working ledger, 19 October 2026. nu.vex has a verified source alpha for real, se
 | Database recovery | Native and container custom-format restore into a new database passed; 8 table fingerprints matched and source remained unchanged | Production backup scheduling, retention, and operator recovery exercises |
 | Corporate deployments | Instance-owned accounts, independent domains, and explicit remote frontend trust are supported | Deploy on the operator's real infrastructure; existing corporate identity requires separate OIDC/SSO |
 | Public collaboration | Source pushed to [ImPaul17/nu.vex](https://github.com/ImPaul17/nu.vex), original README history preserved; private vulnerability reporting enabled | Contributor review, version/support policy, and ongoing maintenance |
-| Native client | Restricted Rust instance transport; release compilation passed on Windows x64/MSVC, Linux x64/GNU, and macOS ARM64; 8 real debug UI groups passed on both Windows and Linux against two independent databases; 10 pure transport tests passed on Linux | macOS runtime, public HTTPS operations, corporate proxy/CA validation, persistent OS credentials, installers, signing, updates, and other architectures remain separate |
+| Native client | Restricted Rust instance transport; release compilation passed on Windows x64/MSVC, Linux x64/GNU, and macOS ARM64; 8 real debug UI groups passed on both Windows and Linux against two independent databases; 10 pure transport tests passed on Linux; tagged Alpha packaging now produces Windows NSIS/MSI, Linux AppImage/DEB, and macOS ARM64 DMG bundles with hashes | macOS runtime, public HTTPS operations, corporate proxy/CA validation, persistent OS credentials, signing, notarization, updates, and other architectures remain separate |
 | Native TLS | Fourteen real HTTPS/WSS cases passed on Windows and Linux with TLS 1.3, production transport policy and secure API mode; six certificate and six redirect negatives passed | Public-domain HTTPS/certificate lifecycle and corporate proxy/CA validation remain separate |
 | Advanced communication | Planned and separated from implemented messaging | Direct messages, uploads, notifications, voice/video, screen sharing, and improved moderation |
 | Open ecosystem | Theme data validation exists; executable extensions are not loaded | Capability-based plugin SDK, bot API, mobile/PWA, and advanced customization |
@@ -72,4 +72,10 @@ These fixtures do not establish a corporate CA or public HTTPS deployment.
 
 ## Publication boundary
 
-The alpha is a source distribution for early testing and collaboration. Native account access has been exercised in Windows and Linux debug applications; those receipts do not establish macOS interactive behavior, a signed installer, public HTTPS operations, or stable production support. Release downloads and tags must be verified in the repository's [Releases](https://github.com/ImPaul17/nu.vex/releases) before describing them as published.
+The alpha is an early testing and collaboration distribution. Native account
+access has been exercised in Windows and Linux debug applications; those
+receipts do not establish macOS interactive behavior, a signed installer,
+public HTTPS operations, or stable production support. The first downloadable
+release is prepared by the [desktop packaging workflow](desktop.md#alpha-release-packaging)
+as a draft prerelease. Only a reviewed GitHub Release with its hashes and
+manifest should be described as published.

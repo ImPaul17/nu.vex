@@ -2,7 +2,7 @@
 
 An independent communication platform being built for communities that want control over their own infrastructure. Original code and branding; no proprietary Discord code, private APIs, or assets.
 
-**Estado actual / Current status:** early messaging alpha. The repository includes the branded client, a Rust/Axum/PostgreSQL service, migrations, a tested self-hosting stack, and a restricted native instance transport. Actual frontend/server/browser/container, native compilation, and Windows/Linux native UI results are recorded in [current verification](docs/verification-current.md). Remaining production and product work is tracked in [release readiness](docs/release-readiness.md).
+**Estado actual / Current status:** early messaging alpha. The repository includes the branded client, a Rust/Axum/PostgreSQL service, migrations, a tested self-hosting stack, and a restricted native instance transport. Actual frontend/server/browser/container, native compilation, and Windows/Linux native UI results are recorded in [current verification](docs/verification-current.md). The desktop release workflow prepares unsigned Windows, Linux, and macOS Alpha installers from tagged commits; publication and remaining production/product work are tracked in [release readiness](docs/release-readiness.md).
 
 ## Run locally
 
@@ -82,6 +82,7 @@ The current messaging milestone demonstrates two real users on one instance exch
 - [Desktop prerequisites, security, and build limitations](docs/desktop.md)
 - [Milestones and acceptance criteria](docs/roadmap.md)
 - [Current release-readiness ledger](docs/release-readiness.md)
+- [Desktop packaging and Alpha release process](docs/desktop.md#alpha-release-packaging)
 - [Current verification results and limits](docs/verification-current.md)
 - [Self-hosting and recovery](docs/self-hosting.md)
 - [Contributing and testing](CONTRIBUTING.md)

@@ -1,0 +1,121 @@
+name: nu.vex desktop release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to build (for example v0.2.0-alpha.3)
+        required: true
+        default: v0.2.0-alpha.3
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nuvex-release-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-x64
+            os: windows-2022
+            toolchain: 1.99.1-x86_64-pc-windows-msvc
+            target: x86_64-pc-windows-msvc
+            bundles: nsis,msi
+          - platform: linux-x64
+            os: ubuntu-24.04
+            toolchain: 1.99.1
+            target: x86_64-unknown-linux-gnu
+            bundles: appimage,deb
+          - platform: macos-arm64
+            os: macos-15
+            toolchain: 1.99.1
+            target: aarch64-apple-darwin
+            bundles: dmg
+    env:
+      RUSTUP_TOOLCHAIN: ${{ matrix.toolchain }}
+      CARGO_TERM_COLOR: always
+      CARGO_BUILD_JOBS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.14.0'
+          cache: npm
+      - name: Install Linux bundling prerequisites
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            libwebkit2gtk-4.1-dev build-essential pkg-config curl wget file \
+            libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev \
+            patchelf xdg-utils
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install "${{ matrix.toolchain }}" --profile minimal
+      - name: Install locked frontend dependencies
+        run: npx --yes npm@11.21.1 ci
+      - name: Generate platform icons from the official nu.vex asset
+        working-directory: apps/desktop
+        run: node ../../node_modules/@tauri-apps/cli/tauri.js icon ../../logo-app.png --output src-tauri/icons --fit contain
+      - name: Build signedness-explicit unsigned bundles
+        working-directory: apps/desktop
+        run: node ../../node_modules/@tauri-apps/cli/tauri.js build --ci --bundles "${{ matrix.bundles }}" --target "${{ matrix.target }}" -- --locked
+      - name: Package and hash release assets
+        run: node scripts/package-release-assets.mjs --bundle-root "apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle" --output ".cache/release-assets/${{ matrix.platform }}" --platform "${{ matrix.platform }}" --target "${{ matrix.target }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-assets-${{ matrix.platform }}
+          path: .cache/release-assets/${{ matrix.platform }}
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: Create draft GitHub Release
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-assets-*
+          path: .cache/release-assets
+          merge-multiple: false
+      - name: Prepare verified release upload
+        env:
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          RELEASE_REVISION: ${{ github.sha }}
+        run: |
+          case "$RELEASE_TAG" in
+            v[0-9]*.[0-9]*.[0-9]*-alpha.[0-9]*) ;;
+            *) echo "Expected an alpha tag such as v0.2.0-alpha.3, got $RELEASE_TAG" >&2; exit 1 ;;
+          esac
+          node scripts/prepare-release-upload.mjs \
+            --input .cache/release-assets \
+            --output .cache/release-upload \
+            --tag "$RELEASE_TAG" \
+            --revision "$RELEASE_REVISION"
+      - name: Create or update draft prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" .cache/release-upload/* --clobber
+          else
+            gh release create "$RELEASE_TAG" \
+              --draft \
+              --prerelease \
+              --title "nu.vex ${RELEASE_TAG}" \
+              --notes-file "docs/releases/${RELEASE_TAG}.md" \
+              .cache/release-upload/*
+          fi
