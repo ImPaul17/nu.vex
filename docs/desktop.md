@@ -123,14 +123,19 @@ artifacts can be inspected before publication.
 For the first downloadable Alpha, create and push:
 
 ```sh
-git tag v0.2.0-alpha.3
-git push origin v0.2.0-alpha.3
+git tag v0.2.0-alpha.4
+git push origin v0.2.0-alpha.4
 ```
 
 The resulting release is unsigned. Windows SmartScreen and macOS Gatekeeper
 may warn; users should verify `SHA256SUMS.txt` before installing. The desktop
 client still requires a separately operated nu.vex instance and does not bundle
 the server.
+
+The Tauri configuration keeps the installer version at numeric `0.2.0` because
+the Windows MSI metadata format rejects semver prerelease identifiers. The
+Alpha identity is carried by the repository tag, package metadata, release
+notes, and manifest.
 
 ## Native instance connection milestone
 
