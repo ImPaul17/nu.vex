@@ -1,12 +1,12 @@
 import { createHash } from 'node:crypto';
 import { copyFile, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
-import { basename, extname, join, relative, resolve } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const allowed = Object.freeze({
-  'windows-x64': new Set(['.exe', '.msi']),
-  'linux-x64': new Set(['.AppImage', '.deb']),
-  'macos-arm64': new Set(['.dmg']),
+  'windows-x64': [['nsis', '.exe'], ['msi', '.msi']],
+  'linux-x64': [['deb', '.deb']],
+  'macos-arm64': [['dmg', '.dmg']],
 });
 
 function fail(message) {
@@ -27,30 +27,21 @@ function parseArgs(argv) {
   return values;
 }
 
-async function filesUnder(root) {
+async function installersUnder(root, formats) {
   const result = [];
-  async function visit(directory) {
-    for (const entry of await readdir(directory, { withFileTypes: true })) {
-      const path = join(directory, entry.name);
-      // AppImage bundling adds these desktop integration entries beside the
-      // image. They are inputs to the installer, not distributable assets.
-      if (entry.name === '.DirIcon' || entry.name.endsWith('.desktop') ||
-          entry.name === 'nuvex-desktop.png' || entry.name === 'bundle_dmg.sh') continue;
-      // Tauri's Linux AppImage bundler can expose its icon as a symlink.
-      // It is metadata for the bundle and must not become a release asset.
-      if (entry.isSymbolicLink()) continue;
-      // A DMG build uses an intermediate .app directory. The DMG is the
-      // distributable artifact; do not mistake its internal files for release
-      // assets or copy the bundle's private contents.
-      if (entry.isDirectory()) {
-        if (!entry.name.endsWith('.app')) await visit(path);
-        continue;
-      }
-      if (entry.isFile()) result.push(path);
-      else fail(`bundle contains a non-regular entry: ${entry.name}`);
+  // Tauri leaves AppDir, DEBIAN/usr staging trees and DMG helpers beside its
+  // final packages. Read only the documented output level for each format.
+  for (const [folder, suffix] of formats) {
+    const directory = join(root, folder);
+    const entries = await readdir(directory, { withFileTypes: true });
+    const candidates = entries.filter((entry) => entry.name.endsWith(suffix));
+    if (candidates.length !== 1) {
+      fail(`expected one ${suffix} installer in ${folder}, found ${candidates.length}`);
     }
+    const [entry] = candidates;
+    if (!entry.isFile()) fail(`installer is not a regular file: ${folder}/${entry.name}`);
+    result.push(join(directory, entry.name));
   }
-  await visit(root);
   return result.sort((left, right) => left.localeCompare(right));
 }
 
@@ -61,18 +52,12 @@ function digest(bytes) {
 export async function packageReleaseAssets({ bundleRoot, output, platform, target }) {
   const root = resolve(bundleRoot);
   const destination = resolve(output);
-  const suffixes = allowed[platform];
-  if (!suffixes) fail(`unsupported release platform ${platform}`);
-  const sourceFiles = await filesUnder(root).catch((error) => {
+  const formats = allowed[platform];
+  if (!formats) fail(`unsupported release platform ${platform}`);
+  const candidates = await installersUnder(root, formats).catch((error) => {
     if (error.code === 'ENOENT') fail(`bundle directory does not exist: ${platform}`);
     throw error;
   });
-  const candidates = sourceFiles.filter((path) => suffixes.has(extname(path)));
-  if (!candidates.length) fail(`no expected installer was produced for ${platform}`);
-  const unexpected = sourceFiles.filter((path) => !suffixes.has(extname(path)));
-  if (unexpected.length) {
-    fail(`unexpected bundle output: ${relative(root, unexpected[0])}`);
-  }
   const names = new Set();
   const files = [];
   await mkdir(destination, { recursive: true });

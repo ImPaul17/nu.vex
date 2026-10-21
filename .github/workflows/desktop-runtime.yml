@@ -14,16 +14,6 @@ on:
       - 'scripts/ci/**'
       - '.github/workflows/desktop-runtime.yml'
   pull_request:
-    paths:
-      - 'apps/desktop/**'
-      - 'apps/web/**'
-      - 'apps/server/**'
-      - 'packages/**'
-      - 'package*.json'
-      - '.npmrc'
-      - 'scripts/verify-desktop*.mjs'
-      - 'scripts/ci/**'
-      - '.github/workflows/desktop-runtime.yml'
   workflow_dispatch:
 
 permissions:

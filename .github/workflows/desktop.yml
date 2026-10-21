@@ -11,13 +11,6 @@ on:
       - '.npmrc'
       - '.github/workflows/desktop.yml'
   pull_request:
-    paths:
-      - 'apps/desktop/**'
-      - 'apps/web/**'
-      - 'packages/**'
-      - 'package*.json'
-      - '.npmrc'
-      - '.github/workflows/desktop.yml'
   workflow_dispatch:
 
 permissions:

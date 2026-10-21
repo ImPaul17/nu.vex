@@ -1,0 +1,329 @@
+[
+  {
+    "name": "alloc-stdlib",
+    "version": "0.3.0",
+    "crateChecksum": "0b5c1865780388bfa186411ab5f247819487fc4864c6e9c3106611fa347586e1",
+    "vcsCommit": "0a81fd6928ea3b33c8cd484aa4575d50ffb98012",
+    "pathInVcs": "alloc-stdlib",
+    "repository": "https://github.com/dropbox/rust-alloc-no-stdlib",
+    "licenseExpression": "BSD-3-Clause",
+    "files": [
+      {
+        "file": "alloc-stdlib-0.3.0/LICENSE",
+        "url": "https://raw.githubusercontent.com/dropbox/rust-alloc-no-stdlib/0a81fd6928ea3b33c8cd484aa4575d50ffb98012/LICENSE",
+        "bytes": 1483,
+        "sha256": "c0c56f26d9c051cac4d200c34c84e7ae9aaa853e01a982a1df08b09931e518ae"
+      }
+    ]
+  },
+  {
+    "name": "dlopen2",
+    "version": "0.8.2",
+    "crateChecksum": "5e2c5bd4158e66d1e215c49b837e11d62f3267b30c92f1d171c4d3105e3dc4d4",
+    "vcsCommit": "cc80e4a0a90d499b677fdf7743699b4b3a43a989",
+    "pathInVcs": "dlopen2",
+    "repository": "https://github.com/OpenByteDev/dlopen2",
+    "licenseExpression": "MIT",
+    "files": [
+      {
+        "file": "dlopen2-0.8.2/LICENSE",
+        "url": "https://raw.githubusercontent.com/OpenByteDev/dlopen2/cc80e4a0a90d499b677fdf7743699b4b3a43a989/LICENSE",
+        "bytes": 1184,
+        "sha256": "39fa265207450e77c62e90c5594a06c085b655d8374c7ced4bf7894b6bd95dd2"
+      }
+    ]
+  },
+  {
+    "name": "dlopen2_derive",
+    "version": "0.4.3",
+    "crateChecksum": "0fbbb781877580993a8707ec48672673ec7b81eeba04cfd2310bd28c08e47c8f",
+    "vcsCommit": "cc80e4a0a90d499b677fdf7743699b4b3a43a989",
+    "pathInVcs": "dlopen2-derive",
+    "repository": "https://github.com/OpenByteDev/dlopen2",
+    "licenseExpression": "MIT",
+    "files": [
+      {
+        "file": "dlopen2_derive-0.4.3/LICENSE",
+        "url": "https://raw.githubusercontent.com/OpenByteDev/dlopen2/cc80e4a0a90d499b677fdf7743699b4b3a43a989/LICENSE",
+        "bytes": 1184,
+        "sha256": "39fa265207450e77c62e90c5594a06c085b655d8374c7ced4bf7894b6bd95dd2"
+      }
+    ]
+  },
+  {
+    "name": "libappindicator-sys",
+    "version": "0.9.0",
+    "crateChecksum": "6e9ec52138abedcc58dc17a7c6c0c00a2bdb4f3427c7f63fa97fd0d859155caf",
+    "vcsCommit": "eafd1e3682a1247f595410266091e9684021cb6f",
+    "pathInVcs": "sys",
+    "repository": "https://github.com/tauri-apps/libappindicator-rs",
+    "licenseExpression": "Apache-2.0 OR MIT",
+    "files": [
+      {
+        "file": "libappindicator-sys-0.9.0/LICENSE-APACHE",
+        "url": "https://raw.githubusercontent.com/tauri-apps/libappindicator-rs/eafd1e3682a1247f595410266091e9684021cb6f/LICENSE-APACHE",
+        "bytes": 10847,
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "file": "libappindicator-sys-0.9.0/LICENSE-MIT",
+        "url": "https://raw.githubusercontent.com/tauri-apps/libappindicator-rs/eafd1e3682a1247f595410266091e9684021cb6f/LICENSE-MIT",
+        "bytes": 1109,
+        "sha256": "eb227437252b2a7a9c1fc342c93ade1f3d7ce38cc6dd754f613db07d53ceff0b"
+      }
+    ],
+    "notes": "Repository identified by commit URLs in the packaged CHANGELOG.md; Cargo.toml has no repository field. Both license alternatives are retained from the exact package VCS commit."
+  },
+  {
+    "name": "r-efi",
+    "version": "5.3.0",
+    "crateChecksum": "69cdb34c158ceb288df11e18b4bd39de994f6657d83847bdffdbd7f346754b0f",
+    "vcsCommit": "97b55bed1c2c91dcbf787674849f05337ff80b33",
+    "pathInVcs": "",
+    "repository": "https://github.com/r-efi/r-efi",
+    "licenseExpression": "MIT OR Apache-2.0 OR LGPL-2.1-or-later",
+    "files": [
+      {
+        "file": "r-efi-5.3.0/LICENSE-AUTHORS",
+        "url": "https://raw.githubusercontent.com/r-efi/r-efi/97b55bed1c2c91dcbf787674849f05337ff80b33/AUTHORS",
+        "bytes": 3693,
+        "sha256": "ff92bed461f50338dd703a9ba9aee496a425957873df1d91192776e4bdf5dda7"
+      },
+      {
+        "file": "r-efi-5.3.0/LICENSE-APACHE",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+        "bytes": 11358,
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    ],
+    "licenseSelection": "Apache-2.0",
+    "selectionReason": "The exact package Cargo.toml declares MIT OR Apache-2.0 OR LGPL-2.1-or-later; the Apache-2.0 alternative is selected. The upstream AUTHORS notice preserves all alternatives and copyright attribution. Upstream has no complete standalone Apache text, so the full unmodified canonical ASF text supplements that notice."
+  },
+  {
+    "name": "r-efi",
+    "version": "6.0.0",
+    "crateChecksum": "f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf",
+    "vcsCommit": "7e1b0322d31d625f81a5656096330934f9cd835d",
+    "pathInVcs": "",
+    "repository": "https://github.com/r-efi/r-efi",
+    "licenseExpression": "MIT OR Apache-2.0 OR LGPL-2.1-or-later",
+    "files": [
+      {
+        "file": "r-efi-6.0.0/LICENSE-AUTHORS",
+        "url": "https://raw.githubusercontent.com/r-efi/r-efi/7e1b0322d31d625f81a5656096330934f9cd835d/AUTHORS",
+        "bytes": 3733,
+        "sha256": "d027e91dbc9cdbb2f1190068e498bd6b61cff022b6a032b191021ba658d96111"
+      },
+      {
+        "file": "r-efi-6.0.0/LICENSE-APACHE",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+        "bytes": 11358,
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    ],
+    "licenseSelection": "Apache-2.0",
+    "selectionReason": "The exact package Cargo.toml declares MIT OR Apache-2.0 OR LGPL-2.1-or-later; the Apache-2.0 alternative is selected. The upstream AUTHORS notice preserves all alternatives and copyright attribution. Upstream has no complete standalone Apache text, so the full unmodified canonical ASF text supplements that notice."
+  },
+  {
+    "name": "rustls-platform-verifier-android",
+    "version": "0.2.0",
+    "crateChecksum": "eec689c0bc40ff2458a5977b6619cb718087084a18e02a131c599b62d05e1a5f",
+    "vcsCommit": "252e25161a91af476cbea620e29d277592d27ec7",
+    "pathInVcs": "android-release-support",
+    "repository": "https://github.com/rustls/rustls-platform-verifier",
+    "licenseExpression": "MIT OR Apache-2.0",
+    "files": [
+      {
+        "file": "rustls-platform-verifier-android-0.2.0/LICENSE-APACHE",
+        "url": "https://raw.githubusercontent.com/rustls/rustls-platform-verifier/252e25161a91af476cbea620e29d277592d27ec7/LICENSE-APACHE",
+        "bytes": 11357,
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      {
+        "file": "rustls-platform-verifier-android-0.2.0/LICENSE-MIT",
+        "url": "https://raw.githubusercontent.com/rustls/rustls-platform-verifier/252e25161a91af476cbea620e29d277592d27ec7/LICENSE-MIT",
+        "bytes": 1066,
+        "sha256": "1c7cf76689c837a68ed8d704994e52a0f2940c087958f860d17f3186afbdcc0c"
+      }
+    ],
+    "notes": "The android-release-support license entries are symlinks to the repository root. Full target texts are retained from the exact VCS commit; no symlink placeholder is used."
+  },
+  {
+    "name": "selectors",
+    "version": "0.38.0",
+    "crateChecksum": "8adfa1c298912827b8a28b223b3b874357397ae706e6190acd9bf28cee99114d",
+    "vcsCommit": "572ecba2d1600e7c3d490586692a209faf703baa",
+    "pathInVcs": "selectors",
+    "repository": "https://github.com/servo/stylo",
+    "licenseExpression": "MPL-2.0",
+    "files": [
+      {
+        "file": "selectors-0.38.0/LICENSE-MPL-2.0",
+        "url": "https://www.mozilla.org/media/MPL/2.0/index.txt",
+        "bytes": 16726,
+        "sha256": "3f3d9e0024b1921b067d6f7f88deb4a60cbe7a78e76c64e3f1d7fc3b779b9d04"
+      },
+      {
+        "file": "selectors-0.38.0/LICENSE-SOURCE-NOTICE.rs",
+        "url": "https://raw.githubusercontent.com/servo/stylo/572ecba2d1600e7c3d490586692a209faf703baa/selectors/lib.rs",
+        "bytes": 643,
+        "sha256": "d54c6e13e9e952dac17d209171df8657e3cae93beaddace4906150cdec8d02e9"
+      }
+    ],
+    "notes": "No complete MPL text is present in the exact upstream tree. Full unmodified canonical Mozilla MPL-2.0 text supplements the byte-preserved crate root lib.rs containing the MPL notice. The Cargo.toml attribution is The Servo Project Developers; no separate COPYRIGHT file is present."
+  },
+  {
+    "name": "webview2-com-macros",
+    "version": "0.8.1",
+    "crateChecksum": "67a921c1b6914c367b2b823cd4cde6f96beec77d30a939c8199bb377cf9b9b54",
+    "vcsCommit": "dffa41a8a46d3f5565eefbff2de57d38d399f158",
+    "pathInVcs": "crates/callback-macros",
+    "repository": "https://github.com/wravery/webview2-rs",
+    "licenseExpression": "MIT",
+    "files": [
+      {
+        "file": "webview2-com-macros-0.8.1/LICENSE",
+        "url": "https://raw.githubusercontent.com/wravery/webview2-rs/dffa41a8a46d3f5565eefbff2de57d38d399f158/LICENSE",
+        "bytes": 1067,
+        "sha256": "0dcf41516e608bbcb6cdc5229feb7b86fe4a643b85e7df251133c93408fdac73"
+      }
+    ]
+  },
+  {
+    "name": "webview2-com-sys",
+    "version": "0.39.1",
+    "crateChecksum": "b3a07132775117d6065853d9d1178157b8c90e228de47129d6bce2c7edebedfb",
+    "vcsCommit": "edc2caf886175ccaebe86078c9cfe1ae2a187328",
+    "pathInVcs": "crates/bindings",
+    "repository": "https://github.com/wravery/webview2-rs",
+    "licenseExpression": "MIT",
+    "files": [
+      {
+        "file": "webview2-com-sys-0.39.1/LICENSE",
+        "url": "https://raw.githubusercontent.com/wravery/webview2-rs/edc2caf886175ccaebe86078c9cfe1ae2a187328/LICENSE",
+        "bytes": 1067,
+        "sha256": "0dcf41516e608bbcb6cdc5229feb7b86fe4a643b85e7df251133c93408fdac73"
+      }
+    ],
+    "notes": "This is the Rust wrapper MIT license. Microsoft WebView2 SDK/loader terms and notices must be considered separately for bundled native payloads."
+  },
+  {
+    "name": "webview2-com",
+    "version": "0.39.1",
+    "crateChecksum": "3f89fca7a704cee10dcb3654c1dbb8941d1783132f1917358af75bec37a7d7e6",
+    "vcsCommit": "edc2caf886175ccaebe86078c9cfe1ae2a187328",
+    "pathInVcs": "crates/webview2-com",
+    "repository": "https://github.com/wravery/webview2-rs",
+    "licenseExpression": "MIT",
+    "files": [
+      {
+        "file": "webview2-com-0.39.1/LICENSE",
+        "url": "https://raw.githubusercontent.com/wravery/webview2-rs/edc2caf886175ccaebe86078c9cfe1ae2a187328/LICENSE",
+        "bytes": 1067,
+        "sha256": "0dcf41516e608bbcb6cdc5229feb7b86fe4a643b85e7df251133c93408fdac73"
+      }
+    ]
+  },
+  {
+    "name": "winapi-i686-pc-windows-gnu",
+    "version": "0.4.0",
+    "crateChecksum": "ac3b87c63620426dd9b991e5ce0329eff545bccbbb34f3be09ff6fb6ab51b7b6",
+    "vcsCommit": null,
+    "pathInVcs": "i686",
+    "repository": "https://github.com/retep998/winapi-rs",
+    "licenseExpression": "MIT/Apache-2.0",
+    "files": [
+      {
+        "file": "winapi-i686-pc-windows-gnu-0.4.0/LICENSE-APACHE",
+        "url": "https://raw.githubusercontent.com/retep998/winapi-rs/9497609ef44cc9bcd16cd2411c0ee6ccaf5483aa/LICENSE-APACHE",
+        "bytes": 11357,
+        "sha256": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1"
+      },
+      {
+        "file": "winapi-i686-pc-windows-gnu-0.4.0/LICENSE-MIT",
+        "url": "https://raw.githubusercontent.com/retep998/winapi-rs/9497609ef44cc9bcd16cd2411c0ee6ccaf5483aa/LICENSE-MIT",
+        "bytes": 1068,
+        "sha256": "5b19674a1db628a475850a131956ed49521b744e3dda8f5a94141f9aba681219"
+      },
+      {
+        "file": "winapi-i686-pc-windows-gnu-0.4.0/LICENSE-SOURCE-NOTICE.rs",
+        "url": "https://raw.githubusercontent.com/retep998/winapi-rs/9497609ef44cc9bcd16cd2411c0ee6ccaf5483aa/i686/src/lib.rs",
+        "bytes": 389,
+        "sha256": "79212a91f610f8a77aa6ed4cc77212c2531eeb35630388bf07323cc328fcca42"
+      }
+    ],
+    "licenseSourceCommit": "9497609ef44cc9bcd16cd2411c0ee6ccaf5483aa",
+    "notes": "The published crate has no .cargo_vcs_info.json. Its Cargo.toml.orig, src/lib.rs and build.rs match this upstream commit byte-for-byte, but that commit postdates the 2018-01-18 package publication. It is a pinned source for missing repository-root MIT/Apache texts, not an assertion of the exact package source commit. The bundled .a import libraries were not compared. The package src/lib.rs notice is retained separately to preserve the 2016 copyright.",
+    "textSourceMatches": [
+      {
+        "file": "Cargo.toml.orig",
+        "url": "https://raw.githubusercontent.com/retep998/winapi-rs/9497609ef44cc9bcd16cd2411c0ee6ccaf5483aa/i686/Cargo.toml",
+        "bytes": 424,
+        "sha256": "5257d6f5283ab052b6af51f578a8c74e14c31deb53a7c6cd9e6fa16135d57eb3"
+      },
+      {
+        "file": "src/lib.rs",
+        "url": "https://raw.githubusercontent.com/retep998/winapi-rs/9497609ef44cc9bcd16cd2411c0ee6ccaf5483aa/i686/src/lib.rs",
+        "bytes": 389,
+        "sha256": "79212a91f610f8a77aa6ed4cc77212c2531eeb35630388bf07323cc328fcca42"
+      },
+      {
+        "file": "build.rs",
+        "url": "https://raw.githubusercontent.com/retep998/winapi-rs/9497609ef44cc9bcd16cd2411c0ee6ccaf5483aa/i686/build.rs",
+        "bytes": 831,
+        "sha256": "4344ce95f51197e1377429cd9ef7a8e3f97d39546776705857991f2f9416f545"
+      }
+    ]
+  },
+  {
+    "name": "winapi-x86_64-pc-windows-gnu",
+    "version": "0.4.0",
+    "crateChecksum": "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f",
+    "vcsCommit": null,
+    "pathInVcs": "x86_64",
+    "repository": "https://github.com/retep998/winapi-rs",
+    "licenseExpression": "MIT/Apache-2.0",
+    "files": [
+      {
+        "file": "winapi-x86_64-pc-windows-gnu-0.4.0/LICENSE-APACHE",
+        "url": "https://raw.githubusercontent.com/retep998/winapi-rs/9497609ef44cc9bcd16cd2411c0ee6ccaf5483aa/LICENSE-APACHE",
+        "bytes": 11357,
+        "sha256": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1"
+      },
+      {
+        "file": "winapi-x86_64-pc-windows-gnu-0.4.0/LICENSE-MIT",
+        "url": "https://raw.githubusercontent.com/retep998/winapi-rs/9497609ef44cc9bcd16cd2411c0ee6ccaf5483aa/LICENSE-MIT",
+        "bytes": 1068,
+        "sha256": "5b19674a1db628a475850a131956ed49521b744e3dda8f5a94141f9aba681219"
+      },
+      {
+        "file": "winapi-x86_64-pc-windows-gnu-0.4.0/LICENSE-SOURCE-NOTICE.rs",
+        "url": "https://raw.githubusercontent.com/retep998/winapi-rs/9497609ef44cc9bcd16cd2411c0ee6ccaf5483aa/x86_64/src/lib.rs",
+        "bytes": 389,
+        "sha256": "79212a91f610f8a77aa6ed4cc77212c2531eeb35630388bf07323cc328fcca42"
+      }
+    ],
+    "licenseSourceCommit": "9497609ef44cc9bcd16cd2411c0ee6ccaf5483aa",
+    "notes": "The published crate has no .cargo_vcs_info.json. Its Cargo.toml.orig, src/lib.rs and build.rs match this upstream commit byte-for-byte, but that commit postdates the 2018-01-18 package publication. It is a pinned source for missing repository-root MIT/Apache texts, not an assertion of the exact package source commit. The bundled .a import libraries were not compared. The package src/lib.rs notice is retained separately to preserve the 2016 copyright.",
+    "textSourceMatches": [
+      {
+        "file": "Cargo.toml.orig",
+        "url": "https://raw.githubusercontent.com/retep998/winapi-rs/9497609ef44cc9bcd16cd2411c0ee6ccaf5483aa/x86_64/Cargo.toml",
+        "bytes": 428,
+        "sha256": "d158846cdb1259d606bfbeb050e386484cb18f14db41478568114eddb76ec43e"
+      },
+      {
+        "file": "src/lib.rs",
+        "url": "https://raw.githubusercontent.com/retep998/winapi-rs/9497609ef44cc9bcd16cd2411c0ee6ccaf5483aa/x86_64/src/lib.rs",
+        "bytes": 389,
+        "sha256": "79212a91f610f8a77aa6ed4cc77212c2531eeb35630388bf07323cc328fcca42"
+      },
+      {
+        "file": "build.rs",
+        "url": "https://raw.githubusercontent.com/retep998/winapi-rs/9497609ef44cc9bcd16cd2411c0ee6ccaf5483aa/x86_64/build.rs",
+        "bytes": 833,
+        "sha256": "b4ab421e1dc98159dd4440813cdaf7d9ea98278324bc6118d0f7cf378933f371"
+      }
+    ]
+  }
+]

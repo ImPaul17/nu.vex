@@ -1,0 +1,77 @@
+[
+  {
+    "name": "ndk",
+    "version": "0.9.0",
+    "crateChecksum": "c3f42e7bbe13d351b6bead8286a43aac9534b82bd3cc43e47037f012ebfd62d4",
+    "vcsCommit": "49bbbba16c58ff63cb8a0ad0eca5a9fb7ecaec25",
+    "pathInVcs": "ndk",
+    "files": [
+      {
+        "file": "ndk/49bbbba16c58ff63cb8a0ad0eca5a9fb7ecaec25/LICENSE-APACHE",
+        "url": "https://raw.githubusercontent.com/rust-mobile/ndk/49bbbba16c58ff63cb8a0ad0eca5a9fb7ecaec25/LICENSE-APACHE",
+        "bytes": 11357,
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      {
+        "file": "ndk/49bbbba16c58ff63cb8a0ad0eca5a9fb7ecaec25/LICENSE-MIT",
+        "url": "https://raw.githubusercontent.com/rust-mobile/ndk/49bbbba16c58ff63cb8a0ad0eca5a9fb7ecaec25/LICENSE-MIT",
+        "bytes": 1036,
+        "sha256": "508a77d2e7b51d98adeed32648ad124b7b30241a8e70b2e72c99f92d8e5874d1"
+      }
+    ],
+    "upstreamLicense": "MIT OR Apache-2.0",
+    "authors": [
+      "The Rust Mobile contributors"
+    ]
+  },
+  {
+    "name": "ndk-sys",
+    "version": "0.6.0+11769913",
+    "crateChecksum": "ee6cda3051665f1fb8d9e08fc35c96d5a244fb1be711a03b71118828afc9a873",
+    "vcsCommit": "49bbbba16c58ff63cb8a0ad0eca5a9fb7ecaec25",
+    "pathInVcs": "ndk-sys",
+    "files": [
+      {
+        "file": "ndk/49bbbba16c58ff63cb8a0ad0eca5a9fb7ecaec25/LICENSE-APACHE",
+        "url": "https://raw.githubusercontent.com/rust-mobile/ndk/49bbbba16c58ff63cb8a0ad0eca5a9fb7ecaec25/LICENSE-APACHE",
+        "bytes": 11357,
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      {
+        "file": "ndk/49bbbba16c58ff63cb8a0ad0eca5a9fb7ecaec25/LICENSE-MIT",
+        "url": "https://raw.githubusercontent.com/rust-mobile/ndk/49bbbba16c58ff63cb8a0ad0eca5a9fb7ecaec25/LICENSE-MIT",
+        "bytes": 1036,
+        "sha256": "508a77d2e7b51d98adeed32648ad124b7b30241a8e70b2e72c99f92d8e5874d1"
+      }
+    ],
+    "upstreamLicense": "MIT OR Apache-2.0",
+    "authors": [
+      "The Rust Windowing contributors"
+    ]
+  },
+  {
+    "name": "ndk-context",
+    "version": "0.1.1",
+    "crateChecksum": "27b02d87554356db9e9a873add8782d4ea6e3e58ea071a9adb9a2e8ddb884a8b",
+    "vcsCommit": "10f2ba388fca20f7349996ebae26ccda7a6fda5c",
+    "pathInVcs": "ndk-context",
+    "files": [
+      {
+        "file": "ndk/10f2ba388fca20f7349996ebae26ccda7a6fda5c/LICENSE-APACHE",
+        "url": "https://raw.githubusercontent.com/rust-windowing/android-ndk-rs/10f2ba388fca20f7349996ebae26ccda7a6fda5c/LICENSE-APACHE",
+        "bytes": 11357,
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      {
+        "file": "ndk/10f2ba388fca20f7349996ebae26ccda7a6fda5c/LICENSE-MIT",
+        "url": "https://raw.githubusercontent.com/rust-windowing/android-ndk-rs/10f2ba388fca20f7349996ebae26ccda7a6fda5c/LICENSE-MIT",
+        "bytes": 1036,
+        "sha256": "508a77d2e7b51d98adeed32648ad124b7b30241a8e70b2e72c99f92d8e5874d1"
+      }
+    ],
+    "upstreamLicense": "MIT OR Apache-2.0",
+    "authors": [
+      "The Rust Windowing contributors"
+    ]
+  }
+]

@@ -1,0 +1,453 @@
+[
+  {
+    "name": "block2",
+    "version": "0.6.2",
+    "crateChecksum": "cdeb9d870516001442e364c5220d3574d2da8dc765554b4a617230d33fa58ef5",
+    "vcsCommit": "b4167b582b2f75f9a1be75495c41b765344fd03c",
+    "pathInVcs": "crates/block2",
+    "files": [
+      {
+        "file": "objc2/b4167b582b2f75f9a1be75495c41b765344fd03c/LICENSE.md",
+        "url": "https://raw.githubusercontent.com/madsmtm/objc2/b4167b582b2f75f9a1be75495c41b765344fd03c/LICENSE.md",
+        "bytes": 1339,
+        "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+      },
+      {
+        "file": "objc2/757cd841d0293341dbefd9b99d7548dec244ffde/LICENSE-MIT-HISTORICAL.txt",
+        "url": "https://raw.githubusercontent.com/madsmtm/objc2/757cd841d0293341dbefd9b99d7548dec244ffde/LICENSE.txt",
+        "bytes": 1066,
+        "sha256": "e353f37b12aefbb9f9b29490e837cfee05d9bda70804b3562839a3285c1df1e5"
+      }
+    ],
+    "upstreamLicense": "MIT",
+    "authors": [
+      "Mads Marquart <mads@marquart.dk>"
+    ],
+    "licenseSelection": "MIT",
+    "selectionReason": "Exact current declaration offers MIT; complete original upstream MIT notice retained from immutable historical commit, with provenance disclosed",
+    "historicalNoticeProvenance": "LICENSE.txt from upstream commit 757cd841d0293341dbefd9b99d7548dec244ffde, before its replacement by LICENSE.md in cfb199226661ec6e4939fcd7cd7531b3c5453076; this full notice is not present in the crate's current source tree."
+  },
+  {
+    "name": "dispatch2",
+    "version": "0.3.1",
+    "crateChecksum": "1e0e367e4e7da84520dedcac1901e4da967309406d1e51017ae1abfb97adbd38",
+    "vcsCommit": "8852b424193ca41602281b3d7540d7c8ed51e49a",
+    "pathInVcs": "crates/dispatch2",
+    "files": [
+      {
+        "file": "objc2/8852b424193ca41602281b3d7540d7c8ed51e49a/LICENSE.md",
+        "url": "https://raw.githubusercontent.com/madsmtm/objc2/8852b424193ca41602281b3d7540d7c8ed51e49a/LICENSE.md",
+        "bytes": 1339,
+        "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+      },
+      {
+        "file": "objc2/apache-2.0/LICENSE-APACHE",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+        "bytes": 11358,
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    ],
+    "upstreamLicense": "Zlib OR Apache-2.0 OR MIT",
+    "licenseSelection": "Apache-2.0",
+    "selectionReason": "Apache-2.0 alternative expressly offered by exact upstream declaration; current LICENSE.md retained",
+    "authors": [
+      "Mads Marquart <mads@marquart.dk>",
+      "Mary <mary@mary.zone>"
+    ]
+  },
+  {
+    "name": "objc2",
+    "version": "0.6.5",
+    "crateChecksum": "08849bbd4767dfae9457696856ae1c84fe4e0281bbe4a7abff2d0e06fb7981f8",
+    "vcsCommit": "d7d2fa23ceaa5e6096c923b081040e5d81b3b9df",
+    "pathInVcs": "crates/objc2",
+    "files": [
+      {
+        "file": "objc2/d7d2fa23ceaa5e6096c923b081040e5d81b3b9df/LICENSE.md",
+        "url": "https://raw.githubusercontent.com/madsmtm/objc2/d7d2fa23ceaa5e6096c923b081040e5d81b3b9df/LICENSE.md",
+        "bytes": 1339,
+        "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+      },
+      {
+        "file": "objc2/757cd841d0293341dbefd9b99d7548dec244ffde/LICENSE-MIT-HISTORICAL.txt",
+        "url": "https://raw.githubusercontent.com/madsmtm/objc2/757cd841d0293341dbefd9b99d7548dec244ffde/LICENSE.txt",
+        "bytes": 1066,
+        "sha256": "e353f37b12aefbb9f9b29490e837cfee05d9bda70804b3562839a3285c1df1e5"
+      }
+    ],
+    "upstreamLicense": "MIT",
+    "authors": [
+      "Mads Marquart <mads@marquart.dk>"
+    ],
+    "licenseSelection": "MIT",
+    "selectionReason": "Exact current declaration offers MIT; complete original upstream MIT notice retained from immutable historical commit, with provenance disclosed",
+    "historicalNoticeProvenance": "LICENSE.txt from upstream commit 757cd841d0293341dbefd9b99d7548dec244ffde, before its replacement by LICENSE.md in cfb199226661ec6e4939fcd7cd7531b3c5453076; this full notice is not present in the crate's current source tree."
+  },
+  {
+    "name": "objc2-encode",
+    "version": "4.1.0",
+    "crateChecksum": "ef25abbcd74fb2609453eb695bd2f860d389e457f67dc17cafc8b8cbc89d0c33",
+    "vcsCommit": "8d214f5477365ffcbcbb7de058c86ed9a518efb7",
+    "pathInVcs": "crates/objc2-encode",
+    "files": [
+      {
+        "file": "objc2/8d214f5477365ffcbcbb7de058c86ed9a518efb7/LICENSE.md",
+        "url": "https://raw.githubusercontent.com/madsmtm/objc2/8d214f5477365ffcbcbb7de058c86ed9a518efb7/LICENSE.md",
+        "bytes": 1339,
+        "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+      },
+      {
+        "file": "objc2/757cd841d0293341dbefd9b99d7548dec244ffde/LICENSE-MIT-HISTORICAL.txt",
+        "url": "https://raw.githubusercontent.com/madsmtm/objc2/757cd841d0293341dbefd9b99d7548dec244ffde/LICENSE.txt",
+        "bytes": 1066,
+        "sha256": "e353f37b12aefbb9f9b29490e837cfee05d9bda70804b3562839a3285c1df1e5"
+      }
+    ],
+    "upstreamLicense": "MIT",
+    "authors": [
+      "Mads Marquart <mads@marquart.dk>"
+    ],
+    "licenseSelection": "MIT",
+    "selectionReason": "Exact current declaration offers MIT; complete original upstream MIT notice retained from immutable historical commit, with provenance disclosed",
+    "historicalNoticeProvenance": "LICENSE.txt from upstream commit 757cd841d0293341dbefd9b99d7548dec244ffde, before its replacement by LICENSE.md in cfb199226661ec6e4939fcd7cd7531b3c5453076; this full notice is not present in the crate's current source tree."
+  },
+  {
+    "name": "objc2-exception-helper",
+    "version": "0.1.1",
+    "crateChecksum": "c7a1c5fbb72d7735b076bb47b578523aedc40f3c439bea6dfd595c089d79d98a",
+    "vcsCommit": "8d214f5477365ffcbcbb7de058c86ed9a518efb7",
+    "pathInVcs": "crates/objc2-exception-helper",
+    "files": [
+      {
+        "file": "objc2/8d214f5477365ffcbcbb7de058c86ed9a518efb7/LICENSE.md",
+        "url": "https://raw.githubusercontent.com/madsmtm/objc2/8d214f5477365ffcbcbb7de058c86ed9a518efb7/LICENSE.md",
+        "bytes": 1339,
+        "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+      },
+      {
+        "file": "objc2/apache-2.0/LICENSE-APACHE",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+        "bytes": 11358,
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    ],
+    "upstreamLicense": "Zlib OR Apache-2.0 OR MIT",
+    "licenseSelection": "Apache-2.0",
+    "selectionReason": "Apache-2.0 alternative expressly offered by exact upstream declaration; current LICENSE.md retained",
+    "authors": [
+      "Mads Marquart <mads@marquart.dk>"
+    ]
+  },
+  {
+    "name": "objc2-app-kit",
+    "version": "0.3.2",
+    "crateChecksum": "d49e936b501e5c5bf01fda3a9452ff86dc3ea98ad5f283e1455153142d97518c",
+    "vcsCommit": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b",
+    "pathInVcs": "framework-crates/objc2-app-kit",
+    "files": [
+      {
+        "file": "objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "url": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "bytes": 1339,
+        "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+      },
+      {
+        "file": "objc2/apache-2.0/LICENSE-APACHE",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+        "bytes": 11358,
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    ],
+    "upstreamLicense": "Zlib OR Apache-2.0 OR MIT",
+    "licenseSelection": "Apache-2.0",
+    "selectionReason": "Apache-2.0 alternative expressly offered by exact upstream declaration; current LICENSE.md retained"
+  },
+  {
+    "name": "objc2-cloud-kit",
+    "version": "0.3.2",
+    "crateChecksum": "73ad74d880bb43877038da939b7427bba67e9dd42004a18b809ba7d87cee241c",
+    "vcsCommit": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b",
+    "pathInVcs": "framework-crates/objc2-cloud-kit",
+    "files": [
+      {
+        "file": "objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "url": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "bytes": 1339,
+        "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+      },
+      {
+        "file": "objc2/apache-2.0/LICENSE-APACHE",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+        "bytes": 11358,
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    ],
+    "upstreamLicense": "Zlib OR Apache-2.0 OR MIT",
+    "licenseSelection": "Apache-2.0",
+    "selectionReason": "Apache-2.0 alternative expressly offered by exact upstream declaration; current LICENSE.md retained"
+  },
+  {
+    "name": "objc2-core-data",
+    "version": "0.3.2",
+    "crateChecksum": "0b402a653efbb5e82ce4df10683b6b28027616a2715e90009947d50b8dd298fa",
+    "vcsCommit": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b",
+    "pathInVcs": "framework-crates/objc2-core-data",
+    "files": [
+      {
+        "file": "objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "url": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "bytes": 1339,
+        "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+      },
+      {
+        "file": "objc2/apache-2.0/LICENSE-APACHE",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+        "bytes": 11358,
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    ],
+    "upstreamLicense": "Zlib OR Apache-2.0 OR MIT",
+    "licenseSelection": "Apache-2.0",
+    "selectionReason": "Apache-2.0 alternative expressly offered by exact upstream declaration; current LICENSE.md retained"
+  },
+  {
+    "name": "objc2-core-foundation",
+    "version": "0.3.2",
+    "crateChecksum": "2a180dd8642fa45cdb7dd721cd4c11b1cadd4929ce112ebd8b9f5803cc79d536",
+    "vcsCommit": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b",
+    "pathInVcs": "framework-crates/objc2-core-foundation",
+    "files": [
+      {
+        "file": "objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "url": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "bytes": 1339,
+        "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+      },
+      {
+        "file": "objc2/apache-2.0/LICENSE-APACHE",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+        "bytes": 11358,
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    ],
+    "upstreamLicense": "Zlib OR Apache-2.0 OR MIT",
+    "licenseSelection": "Apache-2.0",
+    "selectionReason": "Apache-2.0 alternative expressly offered by exact upstream declaration; current LICENSE.md retained"
+  },
+  {
+    "name": "objc2-core-graphics",
+    "version": "0.3.2",
+    "crateChecksum": "e022c9d066895efa1345f8e33e584b9f958da2fd4cd116792e15e07e4720a807",
+    "vcsCommit": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b",
+    "pathInVcs": "framework-crates/objc2-core-graphics",
+    "files": [
+      {
+        "file": "objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "url": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "bytes": 1339,
+        "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+      },
+      {
+        "file": "objc2/apache-2.0/LICENSE-APACHE",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+        "bytes": 11358,
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    ],
+    "upstreamLicense": "Zlib OR Apache-2.0 OR MIT",
+    "licenseSelection": "Apache-2.0",
+    "selectionReason": "Apache-2.0 alternative expressly offered by exact upstream declaration; current LICENSE.md retained"
+  },
+  {
+    "name": "objc2-core-image",
+    "version": "0.3.2",
+    "crateChecksum": "e5d563b38d2b97209f8e861173de434bd0214cf020e3423a52624cd1d989f006",
+    "vcsCommit": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b",
+    "pathInVcs": "framework-crates/objc2-core-image",
+    "files": [
+      {
+        "file": "objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "url": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "bytes": 1339,
+        "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+      },
+      {
+        "file": "objc2/apache-2.0/LICENSE-APACHE",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+        "bytes": 11358,
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    ],
+    "upstreamLicense": "Zlib OR Apache-2.0 OR MIT",
+    "licenseSelection": "Apache-2.0",
+    "selectionReason": "Apache-2.0 alternative expressly offered by exact upstream declaration; current LICENSE.md retained"
+  },
+  {
+    "name": "objc2-core-location",
+    "version": "0.3.2",
+    "crateChecksum": "ca347214e24bc973fc025fd0d36ebb179ff30536ed1f80252706db19ee452009",
+    "vcsCommit": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b",
+    "pathInVcs": "framework-crates/objc2-core-location",
+    "files": [
+      {
+        "file": "objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "url": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "bytes": 1339,
+        "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+      },
+      {
+        "file": "objc2/apache-2.0/LICENSE-APACHE",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+        "bytes": 11358,
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    ],
+    "upstreamLicense": "Zlib OR Apache-2.0 OR MIT",
+    "licenseSelection": "Apache-2.0",
+    "selectionReason": "Apache-2.0 alternative expressly offered by exact upstream declaration; current LICENSE.md retained"
+  },
+  {
+    "name": "objc2-core-text",
+    "version": "0.3.2",
+    "crateChecksum": "0cde0dfb48d25d2b4862161a4d5fcc0e3c24367869ad306b0c9ec0073bfed92d",
+    "vcsCommit": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b",
+    "pathInVcs": "framework-crates/objc2-core-text",
+    "files": [
+      {
+        "file": "objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "url": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "bytes": 1339,
+        "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+      },
+      {
+        "file": "objc2/apache-2.0/LICENSE-APACHE",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+        "bytes": 11358,
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    ],
+    "upstreamLicense": "Zlib OR Apache-2.0 OR MIT",
+    "licenseSelection": "Apache-2.0",
+    "selectionReason": "Apache-2.0 alternative expressly offered by exact upstream declaration; current LICENSE.md retained"
+  },
+  {
+    "name": "objc2-io-surface",
+    "version": "0.3.2",
+    "crateChecksum": "180788110936d59bab6bd83b6060ffdfffb3b922ba1396b312ae795e1de9d81d",
+    "vcsCommit": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b",
+    "pathInVcs": "framework-crates/objc2-io-surface",
+    "files": [
+      {
+        "file": "objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "url": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "bytes": 1339,
+        "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+      },
+      {
+        "file": "objc2/apache-2.0/LICENSE-APACHE",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+        "bytes": 11358,
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    ],
+    "upstreamLicense": "Zlib OR Apache-2.0 OR MIT",
+    "licenseSelection": "Apache-2.0",
+    "selectionReason": "Apache-2.0 alternative expressly offered by exact upstream declaration; current LICENSE.md retained"
+  },
+  {
+    "name": "objc2-quartz-core",
+    "version": "0.3.2",
+    "crateChecksum": "96c1358452b371bf9f104e21ec536d37a650eb10f7ee379fff67d2e08d537f1f",
+    "vcsCommit": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b",
+    "pathInVcs": "framework-crates/objc2-quartz-core",
+    "files": [
+      {
+        "file": "objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "url": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "bytes": 1339,
+        "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+      },
+      {
+        "file": "objc2/apache-2.0/LICENSE-APACHE",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+        "bytes": 11358,
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    ],
+    "upstreamLicense": "Zlib OR Apache-2.0 OR MIT",
+    "licenseSelection": "Apache-2.0",
+    "selectionReason": "Apache-2.0 alternative expressly offered by exact upstream declaration; current LICENSE.md retained"
+  },
+  {
+    "name": "objc2-ui-kit",
+    "version": "0.3.2",
+    "crateChecksum": "d87d638e33c06f577498cbcc50491496a3ed4246998a7fbba7ccb98b1e7eab22",
+    "vcsCommit": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b",
+    "pathInVcs": "framework-crates/objc2-ui-kit",
+    "files": [
+      {
+        "file": "objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "url": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "bytes": 1339,
+        "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+      },
+      {
+        "file": "objc2/apache-2.0/LICENSE-APACHE",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+        "bytes": 11358,
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    ],
+    "upstreamLicense": "Zlib OR Apache-2.0 OR MIT",
+    "licenseSelection": "Apache-2.0",
+    "selectionReason": "Apache-2.0 alternative expressly offered by exact upstream declaration; current LICENSE.md retained"
+  },
+  {
+    "name": "objc2-user-notifications",
+    "version": "0.3.2",
+    "crateChecksum": "9df9128cbbfef73cda168416ccf7f837b62737d748333bfe9ab71c245d76613e",
+    "vcsCommit": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b",
+    "pathInVcs": "framework-crates/objc2-user-notifications",
+    "files": [
+      {
+        "file": "objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "url": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "bytes": 1339,
+        "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+      },
+      {
+        "file": "objc2/apache-2.0/LICENSE-APACHE",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+        "bytes": 11358,
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    ],
+    "upstreamLicense": "Zlib OR Apache-2.0 OR MIT",
+    "licenseSelection": "Apache-2.0",
+    "selectionReason": "Apache-2.0 alternative expressly offered by exact upstream declaration; current LICENSE.md retained"
+  },
+  {
+    "name": "objc2-web-kit",
+    "version": "0.3.2",
+    "crateChecksum": "b2e5aaab980c433cf470df9d7af96a7b46a9d892d521a2cbbb2f8a4c16751e7f",
+    "vcsCommit": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b",
+    "pathInVcs": "framework-crates/objc2-web-kit",
+    "files": [
+      {
+        "file": "objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "url": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+        "bytes": 1339,
+        "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+      },
+      {
+        "file": "objc2/apache-2.0/LICENSE-APACHE",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+        "bytes": 11358,
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    ],
+    "upstreamLicense": "Zlib OR Apache-2.0 OR MIT",
+    "licenseSelection": "Apache-2.0",
+    "selectionReason": "Apache-2.0 alternative expressly offered by exact upstream declaration; current LICENSE.md retained"
+  }
+]

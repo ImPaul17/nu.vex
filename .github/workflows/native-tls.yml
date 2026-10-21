@@ -12,14 +12,6 @@ on:
       - 'scripts/ci/**'
       - '.github/workflows/native-tls.yml'
   pull_request:
-    paths:
-      - 'apps/desktop/transport/**'
-      - 'apps/server/**'
-      - 'package*.json'
-      - '.npmrc'
-      - 'scripts/verify-native-tls*.mjs'
-      - 'scripts/ci/**'
-      - '.github/workflows/native-tls.yml'
   workflow_dispatch:
 
 permissions:

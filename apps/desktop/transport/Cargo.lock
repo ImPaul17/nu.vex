@@ -550,7 +550,7 @@ dependencies = [
 
 [[package]]
 name = "nuvex-transport"
-version = "0.2.0-alpha.5"
+version = "0.2.0-alpha.6"
 dependencies = [
  "futures-util",
  "reqwest",

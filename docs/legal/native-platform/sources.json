@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "file": "Microsoft.WebView2-LICENSE-1.0.3800.47.txt",
+      "url": "https://www.nuget.org/packages/Microsoft.Web.WebView2/1.0.3800.47/License",
+      "bytes": 1487,
+      "sha256": "0af8f1b807512aae39c2ac1aa4d0cae65cabecb6fd554b8439a5162a0d6eca55",
+      "scope": "versioned-upstream-notice-text; actual-installer-payload-review-required"
+    },
+    {
+      "file": "nsis-license-3.13.txt",
+      "url": "https://raw.githubusercontent.com/kichik/nsis/v313/COPYING",
+      "bytes": 15488,
+      "sha256": "6cc665347be5c84b76bf0fd6f85fbb0c33261e89b3408aa3e3e55dbe95e12d89",
+      "scope": "versioned-upstream-notice-text; actual-installer-payload-review-required"
+    },
+    {
+      "file": "nsis-tauri-utils-License-MIT-0.5.3.txt",
+      "url": "https://raw.githubusercontent.com/tauri-apps/nsis-tauri-utils/nsis_tauri_utils-v0.5.3/LICENSE_MIT",
+      "bytes": 1110,
+      "sha256": "1c1020fa10a6bf318717e82c911bcc54ebdfb9bb280460ae332bcb2f82f57fbe",
+      "scope": "versioned-upstream-notice-text; actual-installer-payload-review-required"
+    },
+    {
+      "file": "nsis-tauri-utils-License-Apache-0.5.3.txt",
+      "url": "https://raw.githubusercontent.com/tauri-apps/nsis-tauri-utils/nsis_tauri_utils-v0.5.3/LICENSE_APACHE-2.0",
+      "bytes": 10174,
+      "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594",
+      "scope": "versioned-upstream-notice-text; actual-installer-payload-review-required"
+    }
+  ]
+}
