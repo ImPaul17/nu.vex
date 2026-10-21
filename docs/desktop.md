@@ -112,12 +112,16 @@ Runtime and distribution checks remain separate.
 
 ## Alpha release packaging
 
-The [desktop release workflow](../.github/workflows/release.yml) runs only for
-an explicit `v*` tag or a manual dispatch with an existing Alpha tag. It uses
+The [desktop release workflow](../.github/workflows/release.yml) builds bundles
+on packaging-related pull requests before a tag is created. An explicit `v*`
+tag or a manual dispatch with an existing Alpha tag additionally prepares a
+draft prerelease. Manual builds check out that tag and record its actual
+commit. Published release assets are never overwritten by a rerun. It uses
 the repository-pinned Node and Rust toolchains, generates platform icon
 derivatives from the supplied `logo-app.png`, builds only the requested native
-bundles, verifies the expected installer extensions, and records SHA-256
-digests. The workflow then creates or updates a **draft prerelease** so the
+bundles, requires exactly one installer of each expected format, and records
+SHA-256 digests. Installer staging trees and helper files are excluded. The
+workflow then creates or updates a **draft prerelease** so the
 artifacts can be inspected before publication.
 
 For the first downloadable Alpha, create and push:

@@ -1,6 +1,19 @@
 # Contributing to nu.vex
 
-Contributions and discussions may be in English or Spanish. The product name is always **nu.vex**; technical identifiers may use `nuvex`.
+The main nu.vex repository is currently maintained solely by its owner,
+`ImPaul17`. External code contributions are not being accepted during this
+Alpha. The public source is available for use, modification and independent
+forks under [Apache-2.0](LICENSE); it does not grant write access to this
+repository or permission to create branches in it. Unsolicited pull requests
+may be closed without review. Security reports remain welcome through the
+[private reporting route](SECURITY.md).
+
+The instructions below document the owner's development workflow and help
+people build their own forks. Documentation may be in English or Spanish.
+The product name is always **nu.vex**; technical identifiers may use `nuvex`.
+
+The [repository maintenance record](docs/repository-maintenance.md) documents
+the current access policy and protected-main checks.
 
 ## Before changing code
 

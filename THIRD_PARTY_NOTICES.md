@@ -87,8 +87,15 @@ static client. The source is maintained in the
 [official Tauri repository](https://github.com/tauri-apps/tauri/tree/dev/packages/api).
 
 The npm graph and Cargo lockfiles record dependency versions; each dependency
-retains its own license and notices. The frontend inventory is not a complete
-native distribution audit. Rust crates, platform webviews and system libraries,
-installer tooling, signing/distribution terms, and further vendored material
-need their own review before packaged native distribution. No review of all
-native transitive dependencies is claimed here.
+retains its own license and notices. Release packaging adds a readable
+`notices/` resource with exact locked-crate texts, Rust toolchain copyright and
+license files, project/frontend/font notices, and versioned Windows platform
+texts. The [native collection procedure](docs/legal/native-distribution.md)
+describes source checksums, upstream snapshots and file hashes. Each installer
+is inspected to verify that this collection survives packaging.
+
+The conservative all-target Cargo collection includes packages that may not be
+linked. It is separate from a complete native payload inventory or compatibility
+review. AppImage distribution is deferred pending review of its embedded runtime
+and bundled Linux libraries. macOS runtime, signing/notarization, installer
+updates, and further platform-specific distribution review remain separate work.

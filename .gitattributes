@@ -6,3 +6,5 @@
 *.woff2 binary
 # Preserve upstream license bytes and their reviewed SHA-256 across platforms.
 apps/web/static/licenses/** -text
+# Exact upstream legal texts may contain intentional trailing whitespace.
+docs/legal/** -text -whitespace

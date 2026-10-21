@@ -4,6 +4,15 @@ on:
   push:
     tags:
       - 'v*'
+  pull_request:
+    paths:
+      - '.github/workflows/release.yml'
+      - 'scripts/*release*.mjs'
+      - 'scripts/native-notices*.mjs'
+      - 'apps/desktop/**'
+      - 'package*.json'
+      - 'docs/releases/**'
+      - 'docs/legal/**'
   workflow_dispatch:
     inputs:
       tag:
@@ -12,11 +21,11 @@ on:
         default: v0.2.0-alpha.6
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: nuvex-release-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
@@ -36,7 +45,7 @@ jobs:
             os: ubuntu-24.04
             toolchain: 1.99.1
             target: x86_64-unknown-linux-gnu
-            bundles: appimage,deb
+            bundles: deb
           - platform: macos-arm64
             os: macos-15
             toolchain: 1.99.1
@@ -48,6 +57,8 @@ jobs:
       CARGO_BUILD_JOBS: '2'
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22.14.0'
@@ -64,13 +75,19 @@ jobs:
         run: rustup toolchain install "${{ matrix.toolchain }}" --profile minimal
       - name: Install locked frontend dependencies
         run: npx --yes npm@11.21.1 ci
+      - name: Test release packaging boundaries
+        run: node --test scripts/package-release-assets.test.mjs scripts/prepare-release-upload.test.mjs scripts/native-notices.test.mjs scripts/verify-release-notices.test.mjs
+      - name: Fetch locked notice sources
+        run: cargo fetch --locked --manifest-path apps/desktop/src-tauri/Cargo.toml
+      - name: Collect exact native and frontend notices
+        run: node scripts/native-notices.mjs --target "${{ matrix.target }}" --output apps/desktop/src-tauri/target/native-notices
       - name: Generate platform icons from the official nu.vex asset
         working-directory: apps/desktop
         run: node ../../node_modules/@tauri-apps/cli/tauri.js icon ../../logo-app.png --output src-tauri/icons --fit contain
       - name: Build signedness-explicit unsigned bundles
         if: runner.os != 'macOS'
         working-directory: apps/desktop
-        run: node ../../node_modules/@tauri-apps/cli/tauri.js build --ci --bundles "${{ matrix.bundles }}" --target "${{ matrix.target }}" -- --locked
+        run: node ../../node_modules/@tauri-apps/cli/tauri.js build --ci --config src-tauri/tauri.release.conf.json --bundles "${{ matrix.bundles }}" --target "${{ matrix.target }}" -- --locked
       - name: Build macOS DMG with bounded retry
         if: runner.os == 'macOS'
         working-directory: apps/desktop
@@ -78,7 +95,7 @@ jobs:
         run: |
           set -u
           for attempt in 1 2 3; do
-            if node ../../node_modules/@tauri-apps/cli/tauri.js build --ci --bundles "${{ matrix.bundles }}" --target "${{ matrix.target }}" -- --locked; then
+            if node ../../node_modules/@tauri-apps/cli/tauri.js build --ci --config src-tauri/tauri.release.conf.json --bundles "${{ matrix.bundles }}" --target "${{ matrix.target }}" -- --locked; then
               exit 0
             fi
             echo "DMG bundling attempt ${attempt} failed; removing only this build's partial bundle before retry."
@@ -88,6 +105,39 @@ jobs:
           exit 1
       - name: Package and hash release assets
         run: node scripts/package-release-assets.mjs --bundle-root "apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle" --output ".cache/release-assets/${{ matrix.platform }}" --platform "${{ matrix.platform }}" --target "${{ matrix.target }}"
+      - name: Verify installed Windows notices
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $bundleRoot = Resolve-Path 'apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle'
+          $installRoot = Join-Path $env:RUNNER_TEMP 'nuvex-release-installed'
+          $msiRoot = Join-Path $env:RUNNER_TEMP 'nuvex-release-msi'
+          $exe = Get-ChildItem -LiteralPath (Join-Path $bundleRoot 'nsis') -Filter '*.exe'
+          $setup = Start-Process -FilePath $exe.FullName -ArgumentList @('/S', "/D=$installRoot") -PassThru -Wait -WindowStyle Hidden
+          if ($setup.ExitCode -ne 0) { throw "NSIS failed with code $($setup.ExitCode)" }
+          node scripts/verify-release-notices.mjs --search-root "$installRoot" --expected apps/desktop/src-tauri/target/native-notices
+          if ($LASTEXITCODE -ne 0) { throw 'NSIS notice verification failed' }
+          $msi = Get-ChildItem -LiteralPath (Join-Path $bundleRoot 'msi') -Filter '*.msi'
+          $extract = Start-Process msiexec.exe -ArgumentList @('/a', ('"' + $msi.FullName + '"'), '/qn', ('TARGETDIR="' + $msiRoot + '"')) -Wait -PassThru -WindowStyle Hidden
+          if ($extract.ExitCode -ne 0) { throw "MSI extraction failed with code $($extract.ExitCode)" }
+          node scripts/verify-release-notices.mjs --search-root "$msiRoot" --expected apps/desktop/src-tauri/target/native-notices
+          if ($LASTEXITCODE -ne 0) { throw 'MSI notice verification failed' }
+      - name: Verify Debian package notices
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          extracted="$RUNNER_TEMP/nuvex-release-deb"
+          dpkg-deb --extract apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb "$extracted"
+          node scripts/verify-release-notices.mjs --search-root "$extracted" --expected apps/desktop/src-tauri/target/native-notices
+      - name: Verify mounted macOS notices
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          mount="$RUNNER_TEMP/nuvex-release-dmg"
+          mkdir -p "$mount"
+          hdiutil attach -readonly -nobrowse -mountpoint "$mount" apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+          trap 'hdiutil detach "$mount"' EXIT
+          node scripts/verify-release-notices.mjs --search-root "$mount" --expected apps/desktop/src-tauri/target/native-notices
       - uses: actions/upload-artifact@v4
         with:
           name: release-assets-${{ matrix.platform }}
@@ -97,10 +147,16 @@ jobs:
 
   publish:
     name: Create draft GitHub Release
+    if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.sha }}
+          fetch-depth: 0
       - uses: actions/download-artifact@v4
         with:
           pattern: release-assets-*
@@ -109,12 +165,13 @@ jobs:
       - name: Prepare verified release upload
         env:
           RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
-          RELEASE_REVISION: ${{ github.sha }}
         run: |
           case "$RELEASE_TAG" in
             v[0-9]*.[0-9]*.[0-9]*-alpha.[0-9]*) ;;
             *) echo "Expected an alpha tag such as v0.2.0-alpha.6, got $RELEASE_TAG" >&2; exit 1 ;;
           esac
+          RELEASE_REVISION="$(git rev-parse HEAD)"
+          test "$(git rev-parse "${RELEASE_TAG}^{commit}")" = "$RELEASE_REVISION"
           node scripts/prepare-release-upload.mjs \
             --input .cache/release-assets \
             --output .cache/release-upload \
@@ -126,6 +183,9 @@ jobs:
           RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
         run: |
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            test "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" = true || {
+              echo 'Refusing to replace assets of a published release' >&2; exit 1;
+            }
             gh release upload "$RELEASE_TAG" .cache/release-upload/* --clobber
           else
             gh release create "$RELEASE_TAG" \

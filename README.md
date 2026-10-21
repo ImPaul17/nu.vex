@@ -4,6 +4,18 @@ An independent communication platform being built for communities that want cont
 
 **Estado actual / Current status:** early messaging alpha. The repository includes the branded client, a Rust/Axum/PostgreSQL service, migrations, a tested self-hosting stack, and a restricted native instance transport. Actual frontend/server/browser/container, native compilation, and Windows/Linux native UI results are recorded in [current verification](docs/verification-current.md). The desktop release workflow prepares unsigned Windows, Linux, and macOS Alpha installers from tagged commits; publication and remaining production/product work are tracked in [release readiness](docs/release-readiness.md).
 
+## Desktop downloads
+
+Download installers from [GitHub Releases](https://github.com/ImPaul17/nu.vex/releases).
+Choose a release with attached Windows x64 `.exe`/`.msi`, Linux x64 `.deb`, or
+macOS Apple Silicon `.dmg` assets. Older source-only Alpha releases do not have
+installers. Verify `SHA256SUMS.txt` and read the release notes before installing.
+
+The desktop Alpha connects to a separately hosted nu.vex instance. It does not
+start a server automatically. See [self-hosting](docs/self-hosting.md) to run
+your own instance. These early packages are unsigned; macOS Intel, AppImage,
+code signing and automatic updates are separate planned work.
+
 ## Run locally
 
 Use Node.js 22.14+ within the 22.x line, or Node.js 24+. Dependency installation requires npm `>=11.18 <12`; the project pins **npm 11.21.1**. From the repository root, this command uses the pinned manager without changing your globally installed npm:
@@ -94,8 +106,12 @@ The current messaging milestone demonstrates two real users on one instance exch
 
 ## License
 
+The upstream repository is maintained by `ImPaul17` and is not accepting
+external code contributions during the Alpha. You can build, modify and
+maintain independent forks under the license. See the [maintenance policy](CONTRIBUTING.md).
+
 Licensed under [Apache-2.0](LICENSE), approved by the owner on 19 October 2026. Preserve [NOTICE](NOTICE) and applicable [third-party notices](THIRD_PARTY_NOTICES.md). Geist/Geist Pixel fonts retain SIL OFL 1.1. No trademark rights or official endorsement are granted to derivative projects.
 
 ## En español
 
-nu.vex es un proyecto abierto y autoalojable bajo Apache-2.0. El hito actual integra cuentas reales y mensajería persistente con un servidor propio; el estado verificable y los pendientes están en el registro de preparación para publicación. Para iniciar el cliente ejecuta `npx --yes npm@11.21.1 ci` y `npm run dev`; las cuentas necesitan una instancia en marcha. La demostración local se elige expresamente y no sustituye las pruebas multiusuario. Las contribuciones pueden documentarse en inglés o español.
+nu.vex es un proyecto abierto y autoalojable bajo Apache-2.0. El hito actual integra cuentas reales y mensajería persistente con un servidor propio; el estado verificable y los pendientes están en el registro de preparación para publicación. Para iniciar el cliente ejecuta `npx --yes npm@11.21.1 ci` y `npm run dev`; las cuentas necesitan una instancia en marcha. La demostración local se elige expresamente y no sustituye las pruebas multiusuario. Durante la Alpha, `ImPaul17` mantiene el repositorio principal y no se aceptan contribuciones externas de código; la licencia permite crear y modificar forks independientes.
