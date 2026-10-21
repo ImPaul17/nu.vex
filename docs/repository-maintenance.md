@@ -20,6 +20,9 @@ Verified through GitHub's API on 21 October 2026:
   repository without an external collaborator.
 - Squash is the only enabled merge method. Merged PR branches are deleted
   automatically. The owner can create temporary working branches for maintenance.
+- Workflows triggered by all external fork contributors require manual owner
+  approval. Default workflow permissions are read-only and automated approval of
+  pull requests is disabled.
 
 The required checks cover web/core validation on Windows and Linux, real-instance
 messaging, Compose deployment, native compilation on Windows/Linux/macOS,
