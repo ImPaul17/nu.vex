@@ -1,6 +1,38 @@
-# Current verification — 19 October 2026
+# Current verification — 21 October 2026
 
-[PR #3](https://github.com/ImPaul17/nu.vex/pull/3) merged production-policy native HTTPS/WSS acceptance and complete reviewed frontend distribution notices. All **11 PR checks passed** at `7f9f459c12d98d9b0803fba40920ec3b32ce1b92`. The merge `683a87400b0ccda0441d2cef32943348601de159` was compared with that source using `git diff --exit-code`; the complete tracked snapshot was identical. Documentation-only follow-ups do not alter the tested program. This milestone changes the distributed frontend assets and build pipeline; the earlier published `v0.2.0-alpha.2` tag does not contain those changes. No installers have been published.
+## Published desktop Alpha
+
+[v0.2.0-alpha.6](https://github.com/ImPaul17/nu.vex/releases/tag/v0.2.0-alpha.6)
+is public with Windows x64 EXE/MSI, Linux x64 DEB (Ubuntu 24.04 build baseline),
+and macOS Apple Silicon DMG installers. The tag identifies
+`b83c8f11be16621f7782adb16a4c9c46513ba5d9`. Its tracked tree is identical to
+PR #8 source `a82eb464b9e1a145aacb8eaab52c7144529d8c96`
+(`74f179dbca0ed41fd32b58764189b95bc4c8dbc3`). All fourteen PR checks passed,
+including three packaging jobs in addition to the eleven main-protection checks.
+
+The [tag release run](https://github.com/ImPaul17/nu.vex/actions/runs/39529733167)
+passed all three platform jobs and the draft-publication job. It built the
+actual installers and validated their embedded notice resources: Windows used
+a silent NSIS installation and MSI administrative extraction, Linux extracted
+the DEB, and macOS mounted the DMG read-only. These checks require the exact
+generated inventory and all its file hashes. They do not establish interactive
+macOS runtime or uninstall acceptance.
+
+The nine attached release files were downloaded and checked before publication.
+All seven installer/source-notice hashes matched both `RELEASE-MANIFEST.json`
+and `SHA256SUMS.txt`; the manifest revision matched the tag commit. After
+publication, all four installer URLs returned HTTP 200 without authentication.
+No source-only historical release is counted as an installer release.
+
+The packages are unsigned. The installed client requires a separately operated
+HTTPS instance. Automatic updates, signing/notarization, AppImage and macOS
+Intel packages remain outside this release. See [release readiness](release-readiness.md),
+[native notice scope](legal/native-distribution.md), and the historical source
+and runtime receipts below.
+
+## Earlier source and transport milestone
+
+[PR #3](https://github.com/ImPaul17/nu.vex/pull/3) merged production-policy native HTTPS/WSS acceptance and complete reviewed frontend distribution notices. All **11 PR checks passed** at `7f9f459c12d98d9b0803fba40920ec3b32ce1b92`. The merge `683a87400b0ccda0441d2cef32943348601de159` was compared with that source using `git diff --exit-code`; the complete tracked snapshot was identical. Documentation-only follow-ups do not alter the tested program. This milestone changes the distributed frontend assets and build pipeline; the earlier published `v0.2.0-alpha.2` tag does not contain those changes. That earlier milestone did not publish installers; the Alpha desktop publication below supersedes that distribution limit.
 
 ## Executed hosted receipts
 
@@ -64,7 +96,7 @@ Both hosted web jobs and the actual Compose image build passed all six notice-bo
 
 ## Native compilation and operational boundaries
 
-Release binaries compiled with locked dependencies and --no-bundle for Windows `x86_64-pc-windows-msvc`, Linux `x86_64-unknown-linux-gnu`, and macOS `aarch64-apple-darwin`. Actual native UI/runtime acceptance now covers Windows and Linux debug builds. macOS interactive runtime remains unverified. No installers, signing, updates, clean installation, or other architectures were validated or published as binaries.
+Release binaries compiled with locked dependencies and --no-bundle for Windows `x86_64-pc-windows-msvc`, Linux `x86_64-unknown-linux-gnu`, and macOS `aarch64-apple-darwin`. Actual native UI/runtime acceptance now covers Windows and Linux debug builds. macOS interactive runtime remains unverified. That earlier compilation receipt did not validate installers. The Alpha publication below adds package and notice-resource verification; signing, updates, macOS interactive runtime and other architectures remain unverified.
 
 Native release builds require HTTPS. The integrated native UI/container scenarios used explicitly configured HTTP loopback development servers. The separate 14-case suite now verifies the actual production-policy transport over HTTPS/WSS on Windows and Linux; public HTTPS operation, certificate renewal and corporate CA/proxy/identity remain separate. The original local WSL host still fails with Wsl/Service/CreateInstance/E_FAIL; no local Docker daemon started. Successful hosted Compose execution and native Windows PostgreSQL verification are separate environments.
 
