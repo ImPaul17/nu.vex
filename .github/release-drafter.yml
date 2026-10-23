@@ -1,0 +1,33 @@
+﻿name-template: "v$RESOLVED_VERSION-alpha.$BUILD_NUMBER"
+tag-template: "v$RESOLVED_VERSION-alpha.$BUILD_NUMBER"
+categories:
+  - title: "🚀 Features"
+    labels: ["feat", "feature"]
+  - title: "🐛 Bug Fixes"
+    labels: ["fix", "bug"]
+  - title: "📚 Documentation"
+    labels: ["docs", "documentation"]
+  - title: "🔧 Infrastructure"
+    labels: ["chore", "ci", "build", "refactor"]
+  - title: "🔒 Security"
+    labels: ["security"]
+  - title: "⚡ Performance"
+    labels: ["perf", "performance"]
+change-template: "- $TITLE @$AUTHOR (#$NUMBER)"
+version-resolver:
+  major:
+    labels: ["major"]
+  minor:
+    labels: ["minor", "feat", "feature"]
+  patch:
+    labels: ["patch", "fix", "bug", "docs", "chore", "refactor", "ci", "build", "perf", "security"]
+  default: patch
+template: |
+  ## Changes
+
+  $CHANGES
+
+  ---
+  **Pre-release Alpha** - No usar en producción.
+  Ver [MASTER_PLAN.md](MASTER_PLAN.md) para roadmap completo.
+  Creado por [Pablo](https://github.com/ImPaul17).
