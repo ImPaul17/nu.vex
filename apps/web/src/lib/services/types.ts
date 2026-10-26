@@ -21,3 +21,5 @@ export interface WorkspaceActions {
 }
 
 export type ConnectionStatus = 'connecting' | 'online' | 'reconnecting' | 'offline';
+
+export type InstanceChoice = { url: string; name: string; account?: string };

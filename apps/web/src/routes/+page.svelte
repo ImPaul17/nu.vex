@@ -3,6 +3,8 @@
   import type { Channel, Community, Message } from "@nuvex/core";
   import ChatShell from "$lib/features/ChatShell.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import Modal from "$lib/components/Modal.svelte";
+  import { parseSavedInstances, rememberInstance as addSavedInstance, type SavedInstance } from '@nuvex/core';
   import {
     ApiError,
     InstanceApi,
@@ -32,8 +34,12 @@
   let onboardingTab = $state<"create" | "join">("create");
 
   // Instancias guardadas (multi-instancia)
-  type SavedInstance = { url: string; name: string; lastUsedAt: number };
   let savedInstances = $state<SavedInstance[]>([]);
+  let instancesOpen = $state(false);
+  let nextInstanceAddress = $state('');
+  let connectedAccounts = $state<Record<string, string>>({});
+  const sessions = new Map<string, { connection: InstanceApi; details: InstanceInfo }>();
+  const instanceChoices = $derived(savedInstances.map((item) => ({ ...item, account: connectedAccounts[item.url] })));
 
   // Internos
   let api = $state<InstanceApi | null>(null);
@@ -55,24 +61,16 @@
   // Cargar instancias guardadas al montar
   onMount(() => {
     try {
-      instanceAddress = normalizeInstance(
-        localStorage.getItem("nuvex:last-instance") ?? (isNative ? "" : window.location.origin),
-      );
+      const fallback = import.meta.env.VITE_NUVEX_DEFAULT_INSTANCE || (isNative || import.meta.env.VITE_NUVEX_CLIENT_ONLY === 'true' ? '' : window.location.origin);
+      const address = localStorage.getItem('nuvex:last-instance') || fallback;
+      instanceAddress = address ? normalizeInstance(address) : '';
     } catch {
-      instanceAddress = isNative ? "" : window.location.origin;
+      instanceAddress = '';
     }
 
     // Cargar lista de instancias guardadas
     try {
-      const stored = JSON.parse(localStorage.getItem("nuvex:instances:v1") ?? "[]");
-      if (Array.isArray(stored)) {
-        savedInstances = stored
-          .filter(
-            (item): item is SavedInstance =>
-              Boolean(item && typeof item.url === "string" && typeof item.name === "string"),
-          )
-          .slice(0, 6);
-      }
+      savedInstances = parseSavedInstances(localStorage.getItem("nuvex:instances:v1") ?? '[]');
     } catch {
       savedInstances = [];
     }
@@ -83,7 +81,7 @@
     return () => {
       closed = true;
       stopSocket();
-      void api?.dispose().catch(() => {});
+      for (const session of sessions.values()) void session.connection.dispose().catch(() => {});
     };
   });
 
@@ -108,6 +106,7 @@
   }
 
   function forgetSession() {
+    if (api) { const accounts = { ...connectedAccounts }; delete accounts[api.baseUrl]; connectedAccounts = accounts; }
     sessionEpoch++;
     channelRequest++;
     workspaceRequest++;
@@ -130,10 +129,7 @@
 
   function rememberInstance(details: InstanceInfo, address: string) {
     const url = normalizeInstance(address);
-    const next = [
-      { url, name: details.name || "Instancia nu.vex", lastUsedAt: Date.now() },
-      ...savedInstances.filter((item) => item.url !== url),
-    ].slice(0, 6);
+    const next = addSavedInstance(savedInstances, { url, name: details.name || 'Instancia nu.vex' });
     savedInstances = next;
     try {
       localStorage.setItem("nuvex:instances:v1", JSON.stringify(next));
@@ -146,9 +142,18 @@
     savedInstances = savedInstances.filter((item) => item.url !== url);
     try {
       localStorage.setItem("nuvex:instances:v1", JSON.stringify(savedInstances));
+      if (localStorage.getItem('nuvex:last-instance') === url) localStorage.removeItem('nuvex:last-instance');
     } catch {
       /* No bloquea el cambio de instancia. */
     }
+  }
+
+  async function switchInstance(address: string) {
+    if (busy) return;
+    instancesOpen = false;
+    if (api?.baseUrl === address && snapshot) return;
+    instanceAddress = address;
+    await connect(true);
   }
 
   async function withSession<T>(operation: (connection: InstanceApi) => Promise<T>): Promise<T> {
@@ -171,9 +176,21 @@
     stopSocket();
     const epoch = ++sessionEpoch;
     let candidate: InstanceApi | null = null;
+    snapshot = null;
+    activeChannelId = null;
+    deletedMessageIds.clear();
+    password = ''; email = '';
+    stage = 'loading';
+    instance = null;
     try {
-      candidate = new InstanceApi(instanceAddress);
-      await api?.dispose();
+      const url = normalizeInstance(instanceAddress);
+      // El mediador nativo permite una conexión por ventana: no reutilizar handles invalidados.
+      if (isNative) {
+        for (const session of sessions.values()) await session.connection.dispose().catch(() => {});
+        sessions.clear();
+        connectedAccounts = {};
+      }
+      candidate = sessions.get(url)?.connection ?? new InstanceApi(url);
       api = null;
       const details = await candidate.instance();
       if (epoch !== sessionEpoch || closed) {
@@ -183,6 +200,14 @@
       api = candidate;
       instance = details;
       instanceAddress = candidate.baseUrl;
+      sessions.delete(candidate.baseUrl);
+      sessions.set(candidate.baseUrl, { connection: candidate, details });
+      while (sessions.size > 6) {
+        const oldest = sessions.keys().next().value!;
+        await sessions.get(oldest)?.connection.dispose().catch(() => {});
+        sessions.delete(oldest);
+        const accounts = { ...connectedAccounts }; delete accounts[oldest]; connectedAccounts = accounts;
+      }
       rememberInstance(details, candidate.baseUrl);
       try {
         localStorage.setItem("nuvex:last-instance", instanceAddress);
@@ -190,15 +215,17 @@
         /* Connecting still works without browser storage. */
       }
       stage = "login";
-      if (restore && !candidate.crossOrigin) {
+      if (restore && (!candidate.crossOrigin || connectedAccounts[candidate.baseUrl])) {
         try {
           await enterWorkspace();
         } catch (cause) {
-          if (!(cause instanceof ApiError && cause.status === 401)) throw cause;
+          if (cause instanceof ApiError && cause.status === 401) forgetSession();
+          else throw cause;
         }
       }
     } catch (cause) {
-      await candidate?.dispose().catch(() => {});
+      if (candidate && !sessions.has(candidate.baseUrl)) await candidate.dispose().catch(() => {});
+      snapshot = null;
       api = null;
       instance = null;
       stage = "connect";
@@ -329,6 +356,7 @@
     const fresh = await connection.bootstrap();
     assertCurrent(epoch, connection);
     snapshot = fresh;
+    connectedAccounts = { ...connectedAccounts, [connection.baseUrl]: fresh.user.name };
     const first = snapshot.communities[0]?.channels.find((channel) => channel.kind === "text");
     if (first) await loadChannel(first);
     retryAttempt = 0;
@@ -343,7 +371,7 @@
     connectionStatus = retryAttempt ? "reconnecting" : "connecting";
     try {
       const pending = await connection.eventSocket();
-      if (generation !== socketGeneration || closed || !snapshot) {
+      if (generation !== socketGeneration || !current(epoch, connection) || !snapshot) {
         pending.close();
         return;
       }
@@ -516,7 +544,7 @@
 </svelte:head>
 
 {#if snapshot && snapshot.communities.length > 0}
-  <ChatShell {snapshot} {actions} {connectionStatus} instanceName={instance?.name ?? "nu.vex"} instanceUrl={instanceAddress} />
+  {#key instanceAddress}<ChatShell {snapshot} {actions} {connectionStatus} instanceName={instance?.name ?? "nu.vex"} instanceUrl={instanceAddress} instances={instanceChoices} switchInstance={switchInstance} manageInstances={() => { error = ''; instancesOpen = true; }} />{/key}
   {#if error}
     <div class="session-alert" role="alert">
       {error}
@@ -534,7 +562,7 @@
     </header>
 
     <main class="entry-main">
-      <section class="entry-intro" aria-hidden={stage !== "connect"}>
+      <section class="entry-intro">
         <div class="entry-brand">
           <img src="/brand/logo-app.png" alt="" width="80" height="80" />
         </div>
@@ -557,10 +585,9 @@
           <p class="entry-description">
             Ya tienes una cuenta en <strong>{instance?.name}</strong>. Crea una comunidad o únete a tu equipo.
           </p>
-          <div class="entry-tabs" role="tablist">
+          <div class="entry-tabs" role="group" aria-label="Tu primera comunidad">
             <button
-              role="tab"
-              aria-selected={onboardingTab === "create"}
+              aria-pressed={onboardingTab === "create"}
               class:active={onboardingTab === "create"}
               onclick={() => {
                 onboardingTab = "create";
@@ -570,8 +597,7 @@
               Crear comunidad
             </button>
             <button
-              role="tab"
-              aria-selected={onboardingTab === "join"}
+              aria-pressed={onboardingTab === "join"}
               class:active={onboardingTab === "join"}
               onclick={() => {
                 onboardingTab = "join";
@@ -624,7 +650,7 @@
           <span class="eyebrow">¿DÓNDE CONECTAR?</span>
           <h2>Un servidor. Tu gente.</h2>
           <p class="entry-description">
-            Conecta con la comunidad central de nu.vex o con una instancia de tu equipo.
+            Conecta con una instancia de tu comunidad o equipo.
             Puedes guardar hasta seis espacios y cambiar entre ellos cuando quieras.
           </p>
 
@@ -660,7 +686,7 @@
                   <button
                     class="saved-instance-button"
                     type="button"
-                    onclick={() => { instanceAddress = saved.url; void connect(); }}
+                    onclick={() => void switchInstance(saved.url)}
                     disabled={busy}
                   >
                     <span class="saved-instance-icon"><Icon name="globe" size={16} /></span>
@@ -698,7 +724,7 @@
               <strong>{instance?.name}</strong>
               <small>{instanceAddress}</small>
             </span>
-            <button class="text-button" onclick={() => { password = ""; error = ""; stage = "connect"; }}>Cambiar</button>
+            <button class="text-button" disabled={busy} onclick={() => { password = ""; error = ""; stage = "connect"; }}>Cambiar</button>
           </div>
 
           <h2>{stage === "register" ? "Tu cuenta, en tu servidor." : "De vuelta con tu equipo."}</h2>
@@ -798,4 +824,25 @@
       <span class="creator-attribution">Creado por <a href="https://github.com/ImPaul17" target="_blank" rel="noopener">Pablo</a></span>
     </footer>
   </div>
+{/if}
+
+{#if instancesOpen}
+  <Modal title="Tus instancias" close={() => instancesOpen = false}>
+    <p class="modal-description">Tu comunidad, tu equipo o tu servidor personal. Cada instancia tiene sus propias cuentas y conversaciones.</p>
+    <div class="instance-options">
+      {#each instanceChoices as choice (choice.url)}
+        <button class="instance-option" class:current={choice.url === instanceAddress} onclick={() => void switchInstance(choice.url)}>
+          <span class="instance-avatar"><Icon name="globe" size={21} /></span>
+          <span><strong>{choice.name}</strong><small>{choice.account ? `Sesión de ${choice.account}` : choice.url}</small></span>
+          {#if choice.url === instanceAddress}<Icon name="check" size={18} />{:else}<Icon name="arrow" size={18} />{/if}
+        </button>
+      {/each}
+    </div>
+    <form class="creation-form instance-add-form" onsubmit={(event) => { event.preventDefault(); void switchInstance(nextInstanceAddress); }}>
+      <label for="next-instance">Añadir otra instancia</label>
+      <input id="next-instance" type="url" bind:value={nextInstanceAddress} placeholder="https://chat.tucomunidad.com" required spellcheck="false" />
+      <button class="primary-button" type="submit">Conectar <Icon name="arrow" size={16} /></button>
+    </form>
+    <p class="privacy-note">{isNative ? 'En escritorio, cambiar de instancia requiere iniciar sesión de nuevo. El transporte nativo mantiene una conexión por ventana.' : 'Las sesiones se mantienen en memoria mientras esta pestaña siga abierta. Cerrar sesión revoca solo la cuenta de la instancia actual.'}</p>
+  </Modal>
 {/if}

@@ -1,5 +1,55 @@
 import { test, expect, type Page } from '@playwright/test';
 
+test('cambiar entre dos instancias conserva sesiones sin mezclar mensajes y cierra solo la cuenta actual', async ({ page, context, baseURL }) => {
+  const otherOrigin = process.env.NUVEX_E2E_SECOND_INSTANCE;
+  test.skip(!otherOrigin, 'Requiere una segunda instancia con una base PostgreSQL independiente.');
+  const id = Date.now().toString(36);
+  const accounts = [];
+  for (const [index, address] of [baseURL!, otherOrigin!].entries()) {
+    const registered = await context.request.post(`${address}/api/v1/auth/register`, {
+      headers: { Origin: new URL(baseURL!).origin },
+      data: { email: `multi.${id}.${index}@example.test`, handle: `multi_${id}_${index}`, displayName: `Cuenta ${index}`, password: `Test-multi-${id}!`, ...(index ? { transport: 'bearer' } : {}) }
+    });
+    expect(registered.status()).toBe(201);
+    const data = await registered.json();
+    const headers = { Origin: new URL(baseURL!).origin, ...(index ? { Authorization: `Bearer ${data.accessToken}` } : {}) };
+    const created = await context.request.post(`${address}/api/v1/communities`, { headers, data: { name: `Comunidad ${index}` } });
+    expect(created.status()).toBe(201);
+    const community = (await created.json()).community;
+    const sent = await context.request.post(`${address}/api/v1/channels/${community.channels[0].id}/messages`, {
+      headers, data: { clientId: crypto.randomUUID(), content: `Mensaje privado instancia ${index} ${id}` }
+    });
+    expect(sent.status()).toBe(201);
+    accounts.push({ ...data, address });
+  }
+  await page.goto('/');
+  await expect(page.getByText(`Mensaje privado instancia 0 ${id}`, { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Cambiar de instancia', exact: true }).click();
+  await page.getByLabel('Añadir otra instancia').fill(otherOrigin!);
+  await page.getByRole('button', { name: 'Conectar', exact: true }).click();
+  await page.getByLabel('Correo electrónico', { exact: true }).fill(`multi.${id}.1@example.test`);
+  await page.getByLabel('Contraseña', { exact: true }).fill(`Test-multi-${id}!`);
+  await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click();
+  await expect(page.getByText(`Mensaje privado instancia 1 ${id}`, { exact: true })).toBeVisible();
+  await expect(page.getByText(`Mensaje privado instancia 0 ${id}`, { exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Cambiar de instancia', exact: true }).click();
+  await page.getByRole('button', { name: /Sesión de Cuenta 0/ }).click();
+  await expect(page.getByText(`Mensaje privado instancia 0 ${id}`, { exact: true })).toBeVisible();
+  await expect(page.getByText(`Mensaje privado instancia 1 ${id}`, { exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Cambiar de instancia', exact: true }).click();
+  await page.getByRole('button', { name: /Sesión de Cuenta 1/ }).click();
+  await expect(page.getByText(`Mensaje privado instancia 1 ${id}`, { exact: true })).toBeVisible();
+  await page.screenshot({ path: 'test-results/instancias.png', fullPage: true });
+  await page.getByRole('button', { name: 'Abrir ajustes', exact: true }).click();
+  await page.getByRole('button', { name: 'Cerrar sesión', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'De vuelta con tu equipo.' })).toBeVisible();
+  await page.getByRole('button', { name: 'Cambiar', exact: true }).click();
+  await page.locator('.saved-instance-button').filter({ hasText: new URL(baseURL!).origin }).click();
+  await expect(page.getByText(`Mensaje privado instancia 0 ${id}`, { exact: true })).toBeVisible();
+  const storage = await page.evaluate(() => JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage } }));
+  for (const account of accounts) if (account.accessToken) expect(storage).not.toContain(account.accessToken);
+});
+
 test('two real accounts exchange durable messages with isolated sessions and realtime delivery', async ({ browser }) => {
   const id = Date.now().toString(36);
   const alpha = await browser.newContext(); const beta = await browser.newContext();
@@ -54,7 +104,7 @@ test('two real accounts exchange durable messages with isolated sessions and rea
     await deletable.getByRole('button', { name: 'Eliminar mensaje', exact: true }).click();
     await expect(alice.getByText(`Mensaje eliminable ${id}`, { exact: true })).toHaveCount(0);
     await bob.getByRole('button', { name: 'Abrir ajustes', exact: true }).click();
-    await bob.getByRole('button', { name: /Cerrar sesión y cambiar/ }).click();
+    await bob.getByRole('button', { name: 'Cerrar sesión', exact: true }).click();
     await expect(bob.getByRole('heading', { name: 'De vuelta con tu equipo.' })).toBeVisible();
     await bob.reload(); await expect(bob.getByRole('heading', { name: 'De vuelta con tu equipo.' })).toBeVisible();
     await expect(alice.getByText(first, { exact: true })).toBeVisible();
@@ -68,7 +118,7 @@ test('two real accounts exchange durable messages with isolated sessions and rea
     await expect(alice.getByText(afterLogin, { exact: true })).toBeVisible();
     if (process.env.NUVEX_E2E_REMOTE_URL) {
       await bob.getByRole('button', { name: 'Abrir ajustes', exact: true }).click();
-      await bob.getByRole('button', { name: /Cerrar sesión y cambiar/ }).click();
+      await bob.getByRole('button', { name: 'Cerrar sesión', exact: true }).click();
       await bob.getByRole('button', { name: 'Cambiar', exact: true }).click();
       await bob.getByLabel('Dirección de la instancia', { exact: true }).fill(process.env.NUVEX_E2E_REMOTE_URL);
       await bob.getByRole('button', { name: 'Conectar a la instancia', exact: true }).click();

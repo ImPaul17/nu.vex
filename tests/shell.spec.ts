@@ -93,3 +93,26 @@ test('mobile layout keeps chat visible and channels keyboard accessible without 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
   await page.screenshot({ path: 'test-results/mobile.png', fullPage: true });
 });
+
+test('concentración, categorías y los tres temas mantienen el chat utilizable', async ({ page }) => {
+  await page.goto('/demo');
+  await page.getByRole('button', { name: 'COMUNIDAD', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'bienvenida', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'COMUNIDAD', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'bienvenida', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Modo concentración', exact: true }).click();
+  await expect(page.locator('.channel-sidebar')).toBeHidden();
+  await page.getByRole('textbox', { name: 'Escribir mensaje' }).fill('Hola sin distracciones');
+  await page.keyboard.press('Enter');
+  await expect(page.getByText('Hola sin distracciones', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Mostrar navegación', exact: true }).click();
+  await expect(page.locator('.channel-sidebar')).toBeVisible();
+  for (const [theme, label] of [['emerald', 'Bosque'], ['midnight', 'Medianoche'], ['light', 'Luz de día']]) {
+    await page.getByRole('button', { name: /Un espacio más tuyo/ }).click();
+    await page.getByRole('button', { name: new RegExp(label) }).click();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.app')).toHaveAttribute('data-theme', theme);
+    await expect(page.getByRole('textbox', { name: 'Escribir mensaje' })).toBeVisible();
+    await page.screenshot({ path: `test-results/tema-${theme}.png`, fullPage: true });
+  }
+});

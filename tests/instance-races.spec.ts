@@ -160,6 +160,24 @@ test('a delayed real history response cannot resurrect a message deleted through
   } finally { await held.dispose(); }
 });
 
+test('failed history during session restoration clears the unusable workspace and allows retry', async ({ page, context, baseURL }) => {
+  const account = await seedAccount(context, baseURL, 'restore');
+  const general = account.community.channels[0];
+  const message = await seedMessage(context, baseURL, general.id, `Historial recuperable ${randomUUID()}`);
+  const matches = (url: URL) => historyRequest(url, general.id);
+  const failHistory = async (route: Route) => { await route.abort('failed'); };
+  await page.route(matches, failHistory);
+  try {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: 'Un servidor. Tu gente.', exact: true })).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'Escribir mensaje' })).toHaveCount(0);
+    await expect(page.getByRole('alert')).toContainText('No se puede conectar');
+  } finally { await page.unroute(matches, failHistory); }
+  await page.locator('.saved-instance-button').filter({ hasText: origin(baseURL) }).click();
+  await expect(page.getByText(message.content, { exact: true })).toBeVisible();
+  await expect(page.locator('.composer-caption')).toContainText('historial persistente');
+});
+
 test('a delayed private workspace response cannot replace a later authenticated account', async ({ page, context, browser, baseURL }) => {
   const first = await seedAccount(context, baseURL, 'first');
   const secondContext = await browser.newContext({ baseURL });
@@ -175,7 +193,7 @@ test('a delayed private workspace response cannot replace a later authenticated 
     expect(response.status).toBe(200);
     expect(JSON.parse(response.body).communities.some((community: { id: string }) => community.id === first.community.id)).toBe(true);
     await page.getByRole('button', { name: 'Abrir ajustes', exact: true }).click();
-    await page.getByRole('button', { name: /Cerrar sesión y cambiar/ }).click();
+    await page.getByRole('button', { name: 'Cerrar sesión', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'De vuelta con tu equipo.' })).toBeVisible();
     await page.getByLabel('Correo electrónico', { exact: true }).fill(second.email);
     await page.getByLabel('Contraseña', { exact: true }).fill(second.password);
