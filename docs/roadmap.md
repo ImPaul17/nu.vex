@@ -20,7 +20,7 @@ Pendiente: varios inicios de sesión en la misma instancia, recuperación de con
 
 ## 3. Instancia oficial y acceso web
 
-Publicar el cliente en una dirección provisional y mantener una exportación reproducible. El servidor central tendrá una base de datos y copias independientes, registro controlado y una comunidad administrada por Pablo. Una empresa podrá operar el mismo servidor en su infraestructura.
+El [cliente Alpha](https://nuvex-alpha.pablomerino2008.workers.dev) está publicado en Cloudflare Workers. Su API Rust y PostgreSQL funcionan en el PC mediante un túnel privado y Workers VPC, con base y copias independientes. La comunidad administrada por Pablo todavía requiere configurar su cuenta y membresías. Una empresa puede operar el mismo servidor en su infraestructura.
 
 Aceptación: HTTPS público, registro de dos personas desde redes distintas, acceso a la comunidad oficial mediante membresía, control administrativo, copia/restauración y reinicio probado. Se registrarán la dirección y el operador. Publicar archivos estáticos del cliente no cumple este hito.
 

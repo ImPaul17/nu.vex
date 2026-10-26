@@ -9,8 +9,9 @@
 | Cliente web | Fuentes compartidas, build estático y pruebas de navegador |
 | Cambio de instancia | Verificar sesiones independientes, respuestas tardías y cierre de una sola cuenta |
 | Servidor | PostgreSQL, cuentas, invitaciones, mensajes, permisos y WebSocket |
-| Cliente alojado | URL provisional y exportación reproducible; no incluye el servidor |
-| Instancia oficial | Pendiente infraestructura persistente, HTTPS, copias y operación |
+| Cliente alojado | Worker Cloudflare con URL workers.dev y exportación reproducible |
+| Servicio central Alpha | Axum/PostgreSQL en el PC mediante VPC y túnel privado; copias comprobadas, disponibilidad ligada al PC |
+| Comunidad oficial | Pendiente cuenta de Pablo y configuración de su comunidad |
 | Escritorio | Instaladores Alpha previos; estos cambios aún no están empaquetados |
 | Actualización automática | Pendiente firma, metadatos y prueba de actualización/recuperación |
 | Android/iOS | Pendiente; existe web adaptable |

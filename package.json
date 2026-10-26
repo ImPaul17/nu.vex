@@ -3,6 +3,7 @@
   "version": "0.2.0-alpha.6",
   "private": true,
   "license": "Apache-2.0",
+  "author": "Pablo (ImPaul17)",
   "type": "module",
   "workspaces": [
     "apps/*",
@@ -16,6 +17,9 @@
   "scripts": {
     "dev": "npm run dev --workspace @nuvex/web",
     "build": "npm run build --workspace @nuvex/web",
+    "web:export": "node scripts/export-cloudflare.mjs",
+    "cloudflare:deploy": "npx --yes wrangler@4.152.0 deploy",
+    "test:cloudflare": "node --test infra/cloudflare/*.test.mjs",
     "preview": "npm run preview --workspace @nuvex/web",
     "check": "npm run check --workspace @nuvex/web && tsc --noEmit -p tsconfig.json",
     "test": "tsx --test packages/core/src/*.test.ts",

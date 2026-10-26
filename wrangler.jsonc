@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nuvex-alpha",
+  "main": "infra/cloudflare/worker.mjs",
+  "compatibility_date": "2026-10-26",
+  "workers_dev": true,
+  "vpc_services": [
+    {
+      "binding": "NUVEX_API",
+      "service_id": "01a175a1-ee32-73a1-b7ba-8e769b00203a"
+    }
+  ],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".cache/cloudflare/web",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/health/*"]
+  }
+}

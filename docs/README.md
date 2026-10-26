@@ -6,7 +6,8 @@ Español es el idioma de entrada del proyecto. [English](en/README.md).
 | --- | --- |
 | Entender el producto y sus límites | [README](../README.md), [hoja de ruta](roadmap.md) |
 | Ver los cambios de interfaz | [Interfaz y varias instancias](interface.md) |
-| Abrir la web provisional | [Despliegue web](web-deployment.md) |
+| Abrir la web Alpha | [Despliegue Cloudflare](web-deployment.md) |
+| Operar el servidor del PC | [Instancia local de servicio](local-instance.md) |
 | Ejecutar mi servidor | [Autoalojamiento](self-hosting.md), [servidor](../apps/server/README.md) |
 | Ejecutar o distribuir el escritorio | [Escritorio](desktop.md) |
 | Ejecutar pruebas | [Pruebas](testing.md), [resultados](verification-current.md) |

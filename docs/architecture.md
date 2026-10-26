@@ -41,7 +41,9 @@ Axum y PostgreSQL mantienen el historial con orden estable y paginación por cur
 
 ## Instancia oficial y autoalojamiento
 
-La instancia oficial ejecutará el mismo servidor que las instalaciones independientes. Su diferencia será operativa: administración, admisión a la comunidad, cuotas, copias y moderación. Requiere infraestructura persistente. La exportación estática del cliente no incluye PostgreSQL ni ejecuta Axum.
+El servicio central Alpha ejecuta el mismo servidor que las instalaciones independientes. La web está alojada en Cloudflare Workers; su binding VPC alcanza Axum en el PC mediante un túnel privado. PostgreSQL escucha solo en localhost, en un clúster de servicio separado de las pruebas. La [guía de despliegue](web-deployment.md) registra su URL y operación.
+
+La comunidad oficial de Pablo sigue pendiente de configurar. Su diferencia será operativa: administración, admisión a la comunidad, cuotas, copias y moderación. Mientras el servidor esté en el PC, su disponibilidad depende de que permanezca encendido y conectado. La exportación estática del cliente no incluye PostgreSQL ni ejecuta Axum.
 
 `compose.yaml` integra web, proxy, backend, migraciones y base privada. `infra` proporciona CSP y herramientas de copia/restauración. Claves, contraseñas y configuración se suministran por entorno. Consulta [autoalojamiento](self-hosting.md).
 

@@ -12,7 +12,9 @@ Español es el idioma principal. [English documentation](docs/en/README.md).
 
 El cliente web funciona en escritorio y móvil. En `/demo` puedes explorar comunidades, enviar mensajes locales y personalizar el entorno sin crear una cuenta. La demo se reinicia al recargar.
 
-El despliegue propio en **Cloudflare Workers**, con dirección `workers.dev`, está pendiente de autenticación y publicación. La ruta preferida conecta el cliente con Axum/PostgreSQL en el PC mediante un túnel privado y Workers VPC. Mientras el servicio esté en el PC, este debe permanecer encendido y conectado. Su base PostgreSQL será independiente de las bases de pruebas. El alojamiento anterior de ChatGPT Sites se descarta por decisión del usuario; todavía no hay una nueva URL de Cloudflare verificada. Consulta [el plan de despliegue](docs/web-deployment.md).
+**[Abrir nu.vex Alpha](https://nuvex-alpha.pablomerino2008.workers.dev)** · [Explorar la demo](https://nuvex-alpha.pablomerino2008.workers.dev/demo)
+
+Publicado en la cuenta propia de **Cloudflare Workers**, con API Rust/Axum y PostgreSQL en el PC mediante un túnel privado y Workers VPC. La base del servicio es independiente de las pruebas. Mientras el servicio esté en el PC, **el ordenador debe permanecer encendido, conectado y con los procesos en ejecución**. Consulta [el despliegue y su operación](docs/web-deployment.md).
 
 Las cuentas y el historial compartido necesitan un **servidor nu.vex**. Los instaladores de Windows, Linux y macOS están en [Releases](https://github.com/ImPaul17/nu.vex/releases). La versión publicada de referencia es **v0.2.0-alpha.6**; los cambios de esta rama todavía no forman parte de ese instalador.
 
@@ -30,7 +32,7 @@ Las cuentas y el historial compartido necesitan un **servidor nu.vex**. Los inst
 | Buscar en el historial cargado | Implementado en el cliente |
 | Interfaz móvil, categorías plegables y concentración | Implementado en el cliente compartido |
 | Temas, acento, transparencia, densidad, importar/exportar JSON | Implementado; preferencias locales sin scripts |
-| Instancia oficial y comunidad de nu.vex | Pendiente de desplegar el servidor central y su operación |
+| Servicio central Alpha | Desplegado en Cloudflare con API y PostgreSQL privados en el PC; comunidad oficial de Pablo pendiente de configurar |
 | Privados, amistades, roles personalizados y moderación avanzada | Planificados; aún no disponibles |
 | Voz, vídeo, subida y visualización de archivos compartidos | Planificados; la demo de adjuntos solo muestra metadatos |
 | Inicio con proveedores externos, varias cuentas de una misma instancia | Planificado |

@@ -17,3 +17,5 @@ node --test infra/infra.test.mjs
 Estas pruebas no ejecutan Docker, pg_dump o Nginx; la aceptación del despliegue se registra por separado. No publiques el resultado expandido de Compose cuando contenga secretos.
 
 Para APIs externas, define `NUVEX_CONNECT_ORIGINS` y reconstruye web. Usa orígenes exactos HTTPS; HTTP solo local. También debes configurar el origen permitido en cada backend. Consulta la [guía de autoalojamiento](../docs/self-hosting.md).
+
+`cloudflare/worker.mjs` sirve el cliente mediante Static Assets y dirige la API a un único servicio privado Workers VPC. La configuración está en `wrangler.jsonc`; `npm run test:cloudflare` comprueba el proxy. La operación del despliegue actual se describe en [Cloudflare](../docs/web-deployment.md) y en [la instancia del PC](../docs/local-instance.md).
