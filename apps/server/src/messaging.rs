@@ -81,7 +81,7 @@ async fn channel_member(
     user_id: Uuid,
     channel_id: Uuid,
 ) -> Result<Uuid, ApiError> {
-    sqlx::query_scalar("SELECT c.community_id FROM channels c JOIN community_members m ON m.community_id=c.community_id WHERE c.id=$1 AND m.user_id=$2").bind(channel_id).bind(user_id).fetch_optional(pool).await?.ok_or_else(ApiError::forbidden)
+    sqlx::query_scalar("SELECT c.community_id FROM channels c JOIN community_members m ON m.community_id=c.community_id WHERE c.id=$1 AND c.kind='text' AND m.user_id=$2").bind(channel_id).bind(user_id).fetch_optional(pool).await?.ok_or_else(ApiError::forbidden)
 }
 
 pub async fn history(
@@ -129,7 +129,7 @@ pub async fn send(
     let content = validate_content(&input.content)?;
     let mut tx = state.pool.begin().await?;
     // The membership row is held until commit, ordering writes against revocation.
-    let community_id:Uuid=sqlx::query_scalar("SELECT c.community_id FROM channels c JOIN community_members m ON m.community_id=c.community_id WHERE c.id=$1 AND m.user_id=$2 FOR SHARE OF m").bind(id).bind(auth.user_id).fetch_optional(&mut *tx).await?.ok_or_else(ApiError::forbidden)?;
+    let community_id:Uuid=sqlx::query_scalar("SELECT c.community_id FROM channels c JOIN community_members m ON m.community_id=c.community_id WHERE c.id=$1 AND c.kind='text' AND m.user_id=$2 FOR SHARE OF m").bind(id).bind(auth.user_id).fetch_optional(&mut *tx).await?.ok_or_else(ApiError::forbidden)?;
     let inserted:Option<Message>=sqlx::query_as("INSERT INTO messages(id,channel_id,author_id,client_id,content) VALUES($1,$2,$3,$4,$5) ON CONFLICT(author_id,client_id) DO NOTHING RETURNING id,channel_id,author_id,content,created_at").bind(Uuid::new_v4()).bind(id).bind(auth.user_id).bind(input.client_id).bind(&content).fetch_optional(&mut *tx).await?;
     let created = inserted.is_some();
     let message = if let Some(message) = inserted {
@@ -165,6 +165,7 @@ pub async fn send(
             community_id,
             payload: serde_json::json!({"type":"message.created","message":message}),
             removed_user: None,
+            recipient_session: None,
         });
     }
     Ok((
@@ -185,7 +186,7 @@ pub async fn delete(
     let channel_id = error::uuid(&channel_id)?;
     let message_id = error::uuid(&message_id)?;
     let mut tx = state.pool.begin().await?;
-    let community_id:Uuid=sqlx::query_scalar("SELECT c.community_id FROM channels c JOIN community_members m ON m.community_id=c.community_id WHERE c.id=$1 AND m.user_id=$2 FOR SHARE OF m").bind(channel_id).bind(auth.user_id).fetch_optional(&mut *tx).await?.ok_or_else(ApiError::forbidden)?;
+    let community_id:Uuid=sqlx::query_scalar("SELECT c.community_id FROM channels c JOIN community_members m ON m.community_id=c.community_id WHERE c.id=$1 AND c.kind='text' AND m.user_id=$2 FOR SHARE OF m").bind(channel_id).bind(auth.user_id).fetch_optional(&mut *tx).await?.ok_or_else(ApiError::forbidden)?;
     let author: Uuid =
         sqlx::query_scalar("SELECT author_id FROM messages WHERE id=$1 AND channel_id=$2")
             .bind(message_id)
@@ -200,7 +201,7 @@ pub async fn delete(
     let deleted=sqlx::query("UPDATE messages SET content='[deleted]',deleted_at=clock_timestamp() WHERE id=$1 AND channel_id=$2 AND author_id=$3 AND deleted_at IS NULL").bind(message_id).bind(channel_id).bind(auth.user_id).execute(&mut *tx).await?.rows_affected()>0;
     tx.commit().await?;
     if deleted {
-        let _=state.events.send(Event{community_id,payload:serde_json::json!({"type":"message.deleted","channelId":channel_id,"messageId":message_id}),removed_user:None});
+        let _=state.events.send(Event{community_id,payload:serde_json::json!({"type":"message.deleted","channelId":channel_id,"messageId":message_id}),removed_user:None,recipient_session:None});
     }
     Ok(StatusCode::NO_CONTENT)
 }

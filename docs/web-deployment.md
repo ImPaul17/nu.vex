@@ -8,7 +8,7 @@ Cliente web Alpha: [nuvex-alpha.pablomerino2008.workers.dev](https://nuvex-alpha
 
 La dirección pertenece al despliegue de la cuenta propia de Cloudflare. El cliente y el recorrido Worker → VPC → API están activos: las rutas públicas de salud y de información de instancia responden **200**. El conector también confirma disponibilidad mediante su ruta local `/ready`.
 
-Versión del Worker comprobada el 26 de octubre de 2026: `dda0f992-3690-4022-8fd9-bb96da3d502c`. **Los cuatro escenarios de aceptación pública pasaron en Edge en 17,2 segundos.** También se comprobó un reinicio real de Axum: la misma sesión recuperó la cuenta, la membresía y el mensaje a través de la API pública después de arrancar un proceso nuevo.
+Versión actual del Worker: `06f864db-46de-4283-bca5-a51161fb7450`. **Las dos pruebas públicas de voz pasaron en Edge en 10,4 segundos.** La aceptación inicial del servicio había pasado cuatro escenarios en 17,2 segundos y un reinicio real de Axum, conservando sesión, membresía e historial. Los resultados se registran por fase en [verificación](verification-current.md).
 
 ## Arquitectura y estado
 
@@ -23,11 +23,11 @@ PC: Axum 127.0.0.1:3003 → PostgreSQL 127.0.0.1:55433
 | Recurso | Configuración real | Estado |
 | --- | --- | --- |
 | Worker | `nuvex-alpha` · dirección workers.dev indicada arriba | Publicado; salud e información de instancia responden 200 |
-| Túnel privado | `nuvex-central-pc` | Conector activo y `/ready` correcto; PID comprobado 36044 |
+| Túnel privado | `nuvex-central-pc` | Conector activo y `/ready` correcto; PID en el estado privado |
 | Servicio VPC | `nuvex-central-api` → `127.0.0.1:3003` | Vinculado como `NUVEX_API`; HTTP y WebSocket públicos comprobados |
-| Axum | `127.0.0.1:3003` | Listo tras reinicio real; PID comprobado 6536, origen HTTPS exacto y registro abierto |
+| Axum | `127.0.0.1:3003` | Listo con voz, origen HTTPS exacto y registro abierto; PID en `backend.json` |
 | PostgreSQL | `127.0.0.1:55433/nuvexcentral` | Clúster propio migrado, separado de pruebas; entrega con cero cuentas y cero mensajes |
-| Copia/restauración | `nuvexcentral_restore_20261026_9b76e3f230fb` | Cuatro cuentas y cuatro mensajes sintéticos recuperados; huellas y recuentos coinciden |
+| Copia/restauración con voz | `nuvexcentral_restore_20261026_50dce431c93a` | Cuatro cuentas y un mensaje sintéticos recuperados con dos migraciones; origen sin modificar |
 
 `wrangler.jsonc` conserva la configuración del Worker y el identificador real del servicio VPC. El Worker sirve `/api/v1/` y las rutas de salud mediante el binding; los demás recursos se sirven como archivos estáticos con navegación de aplicación de una sola página.
 
@@ -113,8 +113,10 @@ La primera ejecución pública confirmó recuperación del historial y revocaci�
 
 La última ejecución conjunta de **cuatro escenarios públicos pasó en Edge en 17,2 segundos** después de aplicar `2367978` y publicar la versión del Worker indicada. Cubrió registro e inicio de sesión, invitaciones y dos cuentas con mensajes bidireccionales por WebSocket, persistencia al recargar, revocación de acceso y las regresiones de restauración y del formulario ante un 401 tardío.
 
-Además se reinició el proceso propio de Axum y se comprobó, desde la API pública, que la misma cookie seguía recuperando la cuenta, su membresía y el mensaje persistido. El backend quedó disponible con el nuevo PID 6536; el conector 36044 siguió activo. El comprobante local de ese reinicio se conserva en el directorio privado, junto con los de copia/restauración y limpieza; no se incorporan a Git cookies, credenciales ni trazas de acceso.
+Además se reinició el proceso propio de Axum y se comprobó, desde la API pública, que la misma cookie seguía recuperando la cuenta, su membresía y el mensaje persistido. El conector siguió activo durante el reinicio. Los PID actuales se consultan en el estado privado. Los comprobantes de reinicio, copia/restauración y limpieza se conservan allí; no se incorporan a Git cookies, credenciales ni trazas de acceso.
 
-Sigue pendiente establecer la cuenta y comunidad de Pablo mediante un flujo real de acceso. Las cuentas sintéticas de aceptación ya se retiraron y no representan su cuenta personal. El resultado final y sus límites se registran en [verificación](verification-current.md).
+La ampliación de voz se publicó después como Worker `06f864db-46de-4283-bca5-a51161fb7450`. La API aplica dos migraciones y las dos pruebas públicas de voz pasaron en 10,4 s: audio WebRTC bidireccional, permisos, controles locales y retirada de acceso. Se comprobó otra restauración con los datos de esas pruebas antes de retirarlos. Consulta [voz](voice.md) y [verificación](verification-current.md).
 
-Todas las entregas continúan como **pre-release Alpha**. Privados, amistades, roles avanzados, voz/vídeo, archivos compartidos, proveedores externos, actualizaciones automáticas y apps móviles nativas siguen pendientes en la [hoja de ruta](roadmap.md).
+Sigue pendiente establecer la cuenta y comunidad de Pablo mediante un flujo real de acceso. Las cuentas sintéticas de aceptación ya se retiraron y no representan su cuenta personal.
+
+Todas las entregas continúan como **pre-release Alpha**. Voz es una malla de hasta ocho personas con STUN; TURN, SFU y aceptación en redes distintas quedan pendientes. Privados, amistades, roles avanzados, vídeo, archivos compartidos, proveedores externos, actualizaciones automáticas y apps móviles nativas siguen en la [hoja de ruta](roadmap.md).

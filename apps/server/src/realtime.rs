@@ -27,6 +27,7 @@ pub struct Event {
     pub community_id: Uuid,
     pub payload: serde_json::Value,
     pub removed_user: Option<Uuid>,
+    pub recipient_session: Option<String>,
 }
 impl Event {
     pub fn workspace(community_id: Uuid, removed_user: Option<Uuid>) -> Self {
@@ -34,7 +35,20 @@ impl Event {
             community_id,
             payload: serde_json::json!({"type":"workspace.updated"}),
             removed_user,
+            recipient_session: None,
         }
+    }
+
+    pub fn intended_for(&self, session_hash: &str) -> bool {
+        self.recipient_session
+            .as_deref()
+            .is_none_or(|target| target == session_hash)
+    }
+
+    fn is_voice_end_for(&self, auth: &Auth) -> bool {
+        self.removed_user == Some(auth.user_id)
+            && self.recipient_session.as_deref() == Some(auth.session_hash.as_str())
+            && self.payload.get("type").and_then(serde_json::Value::as_str) == Some("voice.ended")
     }
 }
 pub struct WsTicket {
@@ -227,7 +241,18 @@ async fn handle(
                     Err(tokio::sync::broadcast::error::RecvError::Lagged(_))=>{let _=send(&mut socket,serde_json::json!({"type":"resync.required"})).await;break;},
                     Err(_)=>break,
                 };
-                if !matches!(auth::session_active(&state,&auth).await,Ok(true)){break;}
+                if !event.intended_for(&auth.session_hash) { continue; }
+                // Un aviso de fin propio no contiene SDP ni datos nuevos de la comunidad.
+                // Puede retirar una llamada incluso después de revocar su sesión/membresía.
+                if event.is_voice_end_for(&auth) {
+                    if !send(&mut socket,event.payload.clone()).await { break; }
+                    if !matches!(auth::session_active(&state,&auth).await,Ok(true)){break;}
+                    continue;
+                }
+                if !matches!(auth::session_active(&state,&auth).await,Ok(true)){
+                    crate::voice::remove_session(&state,&auth.session_hash,"session_expired").await;
+                    break;
+                }
                 // Revoked members receive only a data-free instruction to reload their own workspace.
                 if event.removed_user==Some(auth.user_id){
                     if !send(&mut socket,serde_json::json!({"type":"workspace.updated"})).await{break;}
@@ -247,7 +272,10 @@ async fn handle(
                 _=>break,
             },
             _=heartbeat.tick()=>{
-                if !matches!(auth::session_active(&state,&auth).await,Ok(true)){break;}
+                if !matches!(auth::session_active(&state,&auth).await,Ok(true)){
+                    crate::voice::remove_session(&state,&auth.session_hash,"session_expired").await;
+                    break;
+                }
                 if !send_frame(&mut socket,Message::Ping(Vec::new().into())).await{break;}
             }
         }

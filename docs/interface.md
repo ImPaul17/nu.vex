@@ -34,4 +34,4 @@ En escritorio, el transporte Rust sigue admitiendo **una conexión por ventana**
 
 Las pruebas de instancia verifican cuentas, invitaciones, historial, revocación, reconexión y respuestas tardías. El nuevo escenario comprueba que alternar instancias no mezcla mensajes y que cerrar una cuenta no cierra la otra.
 
-No se ha recompilado ni probado interactivamente Tauri con estos cambios. La cobertura del navegador no sustituye esa prueba. Las capturas no demuestran voz, subida real de archivos, privados o moderación avanzada: siguen pendientes en la [hoja de ruta](roadmap.md).
+No se ha recompilado ni probado interactivamente Tauri con estos cambios. La cobertura del navegador no sustituye esa prueba. Las capturas iniciales de esta página corresponden a la interfaz de texto; la voz posterior tiene [su guía, capturas y pruebas](voice.md). Archivos compartidos, privados y moderación avanzada siguen pendientes en la [hoja de ruta](roadmap.md).

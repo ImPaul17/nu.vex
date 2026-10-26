@@ -6,6 +6,7 @@ mod error;
 mod messaging;
 mod realtime;
 mod request_security;
+mod voice;
 
 use crate::{config::Config, error::ApiError};
 use axum::{
@@ -36,6 +37,7 @@ pub struct AppState {
     tickets: Arc<Mutex<HashMap<String, realtime::WsTicket>>>,
     connections: Arc<realtime::Connections>,
     message_limiter: Arc<messaging::MessageRateLimiter>,
+    voice: Arc<tokio::sync::Mutex<voice::Registry>>,
 }
 
 pub fn check_origin(state: &AppState, headers: &HeaderMap) -> Result<(), ApiError> {
@@ -142,6 +144,11 @@ fn router(state: AppState) -> Result<Router, Box<dyn std::error::Error>> {
             "/channels/{channel_id}/messages/{message_id}",
             delete(messaging::delete),
         )
+        .route("/channels/{id}/voice/join", post(voice::join))
+        .route("/channels/{id}/voice/state", post(voice::set_state))
+        .route("/channels/{id}/voice/signal", post(voice::signal))
+        .route("/channels/{id}/voice/leave", post(voice::leave))
+        .route("/channels/{id}/voice/heartbeat", post(voice::heartbeat))
         .route("/events/ticket", post(realtime::ticket))
         .route("/events", get(realtime::events))
         .fallback(not_found)
@@ -194,8 +201,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         tickets: Arc::new(Mutex::new(HashMap::new())),
         connections: Arc::new(realtime::Connections::default()),
         message_limiter: Arc::new(messaging::MessageRateLimiter::default()),
+        voice: Arc::new(tokio::sync::Mutex::new(voice::Registry::default())),
     };
     let listener = tokio::net::TcpListener::bind(bind).await?;
+    tokio::spawn(voice::sweep(state.clone()));
     tracing::info!(address=%bind,"nu.vex server listening");
     axum::serve(
         listener,

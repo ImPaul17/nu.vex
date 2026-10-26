@@ -11,6 +11,7 @@ pub struct Config {
     pub migrate_on_start: bool,
     pub instance_name: String,
     pub trusted_proxies: Vec<ipnet::IpNet>,
+    pub voice_ice_servers: Vec<crate::voice::IceServer>,
 }
 
 fn flag(name: &str) -> Result<bool, String> {
@@ -87,6 +88,9 @@ impl Config {
             migrate_on_start: flag("NUVEX_MIGRATE_ON_START")?,
             instance_name,
             trusted_proxies,
+            voice_ice_servers: crate::voice::parse_ice_servers(
+                env::var("NUVEX_VOICE_ICE_SERVERS").ok().as_deref(),
+            )?,
         })
     }
 }

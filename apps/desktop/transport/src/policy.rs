@@ -103,6 +103,10 @@ pub fn route(path: &str, method: &str, body: Option<&str>) -> Result<Route, Tran
             Kind::Protected
         }
         ("GET" | "POST", ["channels", id, "messages"]) if uuid(id) => Kind::Protected,
+        (
+            "POST",
+            ["channels", id, "voice", "join" | "state" | "signal" | "leave" | "heartbeat"],
+        ) if uuid(id) => Kind::Protected,
         ("DELETE", ["channels", channel, "messages", message])
             if uuid(channel) && uuid(message) =>
         {
@@ -130,12 +134,17 @@ pub fn route(path: &str, method: &str, body: Option<&str>) -> Result<Route, Tran
                 .map_err(|_| TransportError::invalid("La solicitud debe contener un objeto JSON."))
         })
         .transpose()?;
+    if let ["channels", _, "voice", action] = segments.as_slice() {
+        validate_voice_body(action, parsed.as_ref())?;
+        return Ok(Route { kind, body: parsed });
+    }
     let fields: &[&str] = match (method, segments.as_slice()) {
         ("POST", ["auth", "login"]) => &["email", "password", "transport"],
         ("POST", ["auth", "register"]) => {
             &["email", "password", "displayName", "handle", "transport"]
         }
-        ("POST", ["communities"] | ["communities", _, "channels"]) => &["name"],
+        ("POST", ["communities"]) => &["name"],
+        ("POST", ["communities", _, "channels"]) => &["name", "kind"],
         ("POST", ["channels", _, "messages"]) => &["content", "clientId"],
         _ => &[],
     };
@@ -172,6 +181,12 @@ pub fn route(path: &str, method: &str, body: Option<&str>) -> Result<Route, Tran
             if !bounded(object.get("name"), limit) {
                 return Err(TransportError::invalid("El nombre no es válido."));
             }
+            if object
+                .get("kind")
+                .is_some_and(|kind| !matches!(kind.as_str(), Some("text" | "voice")))
+            {
+                return Err(TransportError::invalid("El tipo de canal no es válido."));
+            }
         } else if !bounded(object.get("content"), 4000)
             || !object
                 .get("clientId")
@@ -184,9 +199,154 @@ pub fn route(path: &str, method: &str, body: Option<&str>) -> Result<Route, Tran
     Ok(Route { kind, body: parsed })
 }
 
+fn validate_voice_body(action: &str, body: Option<&Value>) -> Result<(), TransportError> {
+    let invalid = || TransportError::invalid("La operación de voz no es válida.");
+    let object = body.and_then(Value::as_object).ok_or_else(invalid)?;
+    let fields: &[&str] = match action {
+        "join" => &[],
+        "state" => &["participantId", "muted", "deafened"],
+        "signal" => &["participantId", "targetId", "signal"],
+        "leave" | "heartbeat" => &["participantId"],
+        _ => return Err(invalid()),
+    };
+    if object.keys().any(|key| !fields.contains(&key.as_str())) {
+        return Err(invalid());
+    }
+    if action == "join" {
+        return Ok(());
+    }
+    if !object
+        .get("participantId")
+        .and_then(Value::as_str)
+        .is_some_and(uuid)
+    {
+        return Err(invalid());
+    }
+    if action == "state"
+        && (!object.get("muted").is_some_and(Value::is_boolean)
+            || !object.get("deafened").is_some_and(Value::is_boolean))
+    {
+        return Err(invalid());
+    }
+    if action != "signal" {
+        return Ok(());
+    }
+    if !object
+        .get("targetId")
+        .and_then(Value::as_str)
+        .is_some_and(uuid)
+    {
+        return Err(invalid());
+    }
+    let signal = object
+        .get("signal")
+        .and_then(Value::as_object)
+        .ok_or_else(invalid)?;
+    match signal.get("type").and_then(Value::as_str) {
+        Some("offer" | "answer") => {
+            if signal
+                .keys()
+                .any(|key| !["type", "sdp"].contains(&key.as_str()))
+                || !bounded(signal.get("sdp"), 16_384)
+            {
+                return Err(invalid());
+            }
+        }
+        Some("candidate") => {
+            if signal
+                .keys()
+                .any(|key| !["type", "candidate"].contains(&key.as_str()))
+            {
+                return Err(invalid());
+            }
+            let candidate = signal.get("candidate").ok_or_else(invalid)?;
+            if candidate.is_null() {
+                return Ok(());
+            }
+            let candidate = candidate.as_object().ok_or_else(invalid)?;
+            if candidate.keys().any(|key| {
+                !["candidate", "sdpMid", "sdpMLineIndex", "usernameFragment"]
+                    .contains(&key.as_str())
+            }) || !candidate
+                .get("candidate")
+                .and_then(Value::as_str)
+                .is_some_and(|value| value.len() <= 4096)
+                || ["sdpMid", "usernameFragment"].into_iter().any(|key| {
+                    candidate.get(key).is_some_and(|value| {
+                        !value.is_null() && !value.as_str().is_some_and(|text| text.len() <= 256)
+                    })
+                })
+                || candidate.get("sdpMLineIndex").is_some_and(|value| {
+                    !value.is_null() && !value.as_u64().is_some_and(|index| index <= 65535)
+                })
+            {
+                return Err(invalid());
+            }
+        }
+        _ => return Err(invalid()),
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn voice_routes_validate_exact_operations_and_bounded_signals() {
+        let id = "99e7934a-97c8-40fc-9ce0-f21915ecc883";
+        let join = format!("/channels/{id}/voice/join");
+        assert!(route(&join, "POST", Some("{}")).is_ok());
+        assert!(route(&join, "GET", None).is_err());
+        assert!(route(&join, "POST", Some(r#"{"url":"https://other.test"}"#)).is_err());
+        assert!(route(&format!("/channels/{id}/voice/unknown"), "POST", Some("{}")).is_err());
+        let state = serde_json::json!({"participantId":id,"muted":true,"deafened":false});
+        assert!(route(
+            &format!("/channels/{id}/voice/state"),
+            "POST",
+            Some(&state.to_string())
+        )
+        .is_ok());
+        let state = serde_json::json!({"participantId":id,"muted":"true","deafened":false});
+        assert!(route(
+            &format!("/channels/{id}/voice/state"),
+            "POST",
+            Some(&state.to_string())
+        )
+        .is_err());
+        let signal = serde_json::json!({"participantId":id,"targetId":id,"signal":{"type":"offer","sdp":"v=0\r\n"}});
+        assert!(route(
+            &format!("/channels/{id}/voice/signal"),
+            "POST",
+            Some(&signal.to_string())
+        )
+        .is_ok());
+        let signal = serde_json::json!({"participantId":id,"targetId":id,"signal":{"type":"offer","sdp":"x".repeat(16_385)}});
+        assert!(route(
+            &format!("/channels/{id}/voice/signal"),
+            "POST",
+            Some(&signal.to_string())
+        )
+        .is_err());
+        let signal = serde_json::json!({"participantId":id,"targetId":id,"signal":{"type":"candidate","candidate":{"candidate":"candidate:1","sdpMid":"0","sdpMLineIndex":0,"usernameFragment":"abc"}}});
+        assert!(route(
+            &format!("/channels/{id}/voice/signal"),
+            "POST",
+            Some(&signal.to_string())
+        )
+        .is_ok());
+        assert!(route(
+            &format!("/communities/{id}/channels"),
+            "POST",
+            Some(r#"{"name":"charla","kind":"voice"}"#)
+        )
+        .is_ok());
+        assert!(route(
+            &format!("/communities/{id}/channels"),
+            "POST",
+            Some(r#"{"name":"charla","kind":"video"}"#)
+        )
+        .is_err());
+    }
     #[test]
     fn origins_are_exact_and_debug_http_is_loopback_only() {
         assert_eq!(

@@ -1,6 +1,7 @@
 import type { Channel, Community, Member, Message } from '@nuvex/core';
 import type { WorkspaceSnapshot } from './types';
 import { createNativeTransport, isNative, NativeTransportError, type EventSocket } from './native';
+import { decodeVoiceJoin, type VoiceJoin } from './voice';
 
 export class ApiError extends Error {
   constructor(message: string, public readonly status: number, public readonly code: string) { super(message); }
@@ -114,7 +115,9 @@ export class InstanceApi {
     return decodeMessage((await this.request(`/channels/${encodeURIComponent(channelId)}/messages`, { method: 'POST', body: JSON.stringify({ content, clientId }) })).message);
   }
   async createCommunity(name: string): Promise<Community> { return decodeCommunity((await this.request('/communities', { method: 'POST', body: JSON.stringify({ name }) })).community); }
-  async createChannel(id: string, name: string): Promise<Channel> { return decodeChannel((await this.request(`/communities/${encodeURIComponent(id)}/channels`, { method: 'POST', body: JSON.stringify({ name }) })).channel); }
+  async createChannel(id: string, name: string, kind: 'text' | 'voice' = 'text'): Promise<Channel> { return decodeChannel((await this.request(`/communities/${encodeURIComponent(id)}/channels`, { method: 'POST', body: JSON.stringify({ name, ...(kind === 'voice' ? { kind } : {}) }) })).channel); }
+  async joinVoice(channelId: string): Promise<VoiceJoin> { return decodeVoiceJoin(await this.request(`/channels/${encodeURIComponent(channelId)}/voice/join`, { method: 'POST', body: '{}' })); }
+  async voiceControl(channelId: string, action: 'state' | 'leave' | 'heartbeat' | 'signal', body: Record<string, unknown>): Promise<void> { await this.request(`/channels/${encodeURIComponent(channelId)}/voice/${action}`, { method: 'POST', body: JSON.stringify(body) }); }
   async createInvite(id: string): Promise<string> { return text((await this.request(`/communities/${encodeURIComponent(id)}/invites`, { method: 'POST' })).code, 256); }
   async joinInvite(code: string): Promise<void> { await this.request(`/invites/${encodeURIComponent(code)}/join`, { method: 'POST' }); }
   async deleteMessage(message: Message): Promise<void> { await this.request(`/channels/${encodeURIComponent(message.channelId)}/messages/${encodeURIComponent(message.id)}`, { method: 'DELETE' }); }

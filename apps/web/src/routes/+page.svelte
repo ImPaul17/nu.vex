@@ -1,4 +1,4 @@
-﻿<script lang="ts">
+<script lang="ts">
   import { onMount } from "svelte";
   import type { Channel, Community, Message } from "@nuvex/core";
   import ChatShell from "$lib/features/ChatShell.svelte";
@@ -14,6 +14,7 @@
   } from "$lib/services/api";
   import { isNative, type EventSocket } from "$lib/services/native";
   import type { ConnectionStatus, WorkspaceActions, WorkspaceSnapshot } from "$lib/services/types";
+  import { VoiceSession, decodeVoiceEvent, emptyVoiceState } from '$lib/services/voice';
 
   // Estado de la UI
   let stage = $state<"loading" | "connect" | "login" | "register">("loading");
@@ -23,6 +24,17 @@
   let connectionStatus = $state<ConnectionStatus>("offline");
   let error = $state("");
   let busy = $state(false);
+  let voice = $state(emptyVoiceState());
+  let voiceSession: VoiceSession | null = null;
+
+  function leaveVoice(reason = '') { voiceSession?.leave(reason); voiceSession = null; if (!reason) voice = emptyVoiceState(); }
+  async function joinVoice(channel: Channel) {
+    if (!api || !snapshot || connectionStatus !== 'online') return;
+    leaveVoice();
+    const session = new VoiceSession(api, channel.id, channel.name, (next) => { if (voiceSession === session) voice = next; });
+    voiceSession = session;
+    await session.join();
+  }
 
   // Formularios
   let email = $state("");
@@ -86,6 +98,7 @@
   });
 
   function stopSocket() {
+    leaveVoice();
     socketGeneration++;
     clearTimeout(reconnectTimer);
     const previous = socket;
@@ -332,6 +345,7 @@
       const allowedChannels = new Set(
         fresh.communities.flatMap((community) => community.channels.map((channel) => channel.id)),
       );
+      if (voice.channelId && !allowedChannels.has(voice.channelId)) leaveVoice('Ya no tienes acceso a este canal de voz.');
       snapshot = {
         ...fresh,
         historyGeneration: (snapshot.historyGeneration ?? 0) + (reset ? 1 : 0),
@@ -407,6 +421,8 @@
           return;
         }
         const incoming = decodeEvent(payload);
+        const voiceEvent = decodeVoiceEvent(payload);
+        if (voiceEvent) { voiceSession?.event(voiceEvent); return; }
         if (!incoming || !snapshot) return;
         if (incoming.type === "message.created") {
           const known = snapshot.communities.some((community) =>
@@ -423,7 +439,7 @@
         } else reconcile(incoming.type === "resync.required");
       };
       pending.onclose = () => {
-        if (generation === socketGeneration) scheduleReconnect();
+        if (generation === socketGeneration) { leaveVoice('La conexión con la instancia se ha interrumpido. Vuelve a unirte al canal cuando se reconecte.'); scheduleReconnect(); }
       };
       pending.onerror = () => pending.close();
     } catch (cause) {
@@ -496,8 +512,8 @@
       await refreshWorkspace();
       return created;
     },
-    async createChannel(id, name) {
-      const created = await withSession((connection) => connection.createChannel(id, name));
+    async createChannel(id, name, kind) {
+      const created = await withSession((connection) => connection.createChannel(id, name, kind));
       await refreshWorkspace();
       return created;
     },
@@ -512,6 +528,7 @@
       if (snapshot) snapshot = { ...snapshot, messages: snapshot.messages.filter((current) => current.id !== item.id) };
     },
     async logout() {
+      leaveVoice();
       const connection = api;
       const epoch = sessionEpoch;
       try {
@@ -545,7 +562,7 @@
 </svelte:head>
 
 {#if snapshot && snapshot.communities.length > 0}
-  {#key instanceAddress}<ChatShell {snapshot} {actions} {connectionStatus} instanceName={instance?.name ?? "nu.vex"} instanceUrl={instanceAddress} instances={instanceChoices} switchInstance={switchInstance} manageInstances={() => { error = ''; instancesOpen = true; }} />{/key}
+  {#key instanceAddress}<ChatShell {snapshot} {actions} {connectionStatus} {voice} joinVoice={joinVoice} leaveVoice={() => leaveVoice()} muteVoice={() => voiceSession?.toggleMuted()} deafenVoice={() => voiceSession?.toggleDeafened()} voiceInput={(id) => voiceSession?.setInput(id)} voiceOutput={(id) => voiceSession?.setOutput(id)} voiceVolume={(value) => voiceSession?.setVolume(value)} resumeVoice={() => voiceSession?.resumeAudio()} voicePeerMute={(id) => voiceSession?.togglePeerMuted(id)} voicePeerVolume={(id, value) => voiceSession?.setPeerVolume(id, value)} instanceName={instance?.name ?? "nu.vex"} instanceUrl={instanceAddress} instances={instanceChoices} switchInstance={switchInstance} manageInstances={() => { error = ''; instancesOpen = true; }} />{/key}
   {#if error}
     <div class="session-alert" role="alert">
       {error}

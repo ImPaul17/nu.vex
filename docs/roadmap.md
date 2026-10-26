@@ -34,7 +34,9 @@ Orden: definir permisos y bloqueo; implementar almacenamiento y comprobación en
 
 Subida de archivos con cuotas y autorización por conversación; vistas seguras de texto, imágenes y vídeo; descarga con nombre y tipo controlados. Los documentos activos no se ejecutan dentro de la app. El almacenamiento debe admitir limpieza y copias junto con la base de datos.
 
-Voz y vídeo: señalización autenticada, WebRTC, TURN y un SFU para grupos; controles de micrófono, auriculares, silencio y salida. Compartir pantalla necesitará permiso explícito. Aceptación: dos dispositivos y redes distintas, reconexión, permisos de dispositivo y expulsión de usuarios sin acceso. Los canales de voz de la demo siguen siendo vistas informativas.
+Voz Alpha implementada: canales de hasta ocho personas con WebRTC, señalización autenticada, micrófono, escucha, selección de dispositivos y volumen global/individual. Las pruebas locales y públicas comprueban audio bidireccional y revocación. La demo mantiene el micrófono apagado. Consulta [voz](voice.md) y [su protocolo](voice-server.md).
+
+Pendiente: relay TURN de producción, SFU para grupos y pruebas en dispositivos y redes físicas distintas. La integración actual requiere volver a entrar al recuperar una conexión perdida. Vídeo, pantalla y sonido compartido son entregables posteriores con permisos explícitos. Pulsar para hablar, actividad de voz y moderación específica de audio requieren implementación propia y aceptación adicional.
 
 ## 6. Windows y móvil
 

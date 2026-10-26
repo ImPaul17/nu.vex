@@ -16,6 +16,8 @@ npm run test:e2e
 
 La suite de modelos usa `node:test` mediante `tsx`. Playwright necesita su navegador instalado o un navegador compatible existente. En este Windows se usa Edge:
 
+`npm test` también ejecuta `tests/voice-lifecycle.test.ts`: cancelación de permiso, respuesta de alta tardía, selección de micrófono concurrente, cierre de pistas y orden de los listados de participantes. Son pruebas de ciclo de vida sin micrófono físico.
+
 ```powershell
 $env:PLAYWRIGHT_CHANNEL = 'msedge'
 npm run test:e2e
@@ -39,6 +41,12 @@ La segunda variable es opcional para las pruebas anteriores. La prueba de cambio
 Se comprueban cuentas reales, invitaciones, entrega bidireccional, persistencia al recargar, revocación, WebSocket y respuestas tardías. La prueba ampliada alterna entre dos cuentas en bases diferentes, verifica que no se mezclen mensajes y que cerrar una sesión no cierre la otra.
 
 `NUVEX_E2E_BASE_URL` permite apuntar al despliegue web real sin iniciar Vite. No ejecutes estas pruebas contra un servicio con datos de usuarios.
+
+## Voz
+
+`npm run test:voice` necesita una instancia migrada que admita canales de voz. Usa un dispositivo de audio sintético del navegador y permisos limitados a esos contextos de prueba. Verifica paquetes WebRTC recibidos por ambos clientes, controles locales, expulsión y micrófono denegado. La [guía de voz](voice.md) contiene el recorrido y sus límites.
+
+Las trazas de esta suite permanecen en `.cache/voice-playwright`; las capturas revisables se escriben en `test-results/voz-*.png`. Si ejecutas varias suites simultáneamente, utiliza directorios `--output` distintos fuera de la carpeta que limpie otra suite. Las trazas pueden contener credenciales sintéticas.
 
 ## Rust, contenedores y escritorio
 

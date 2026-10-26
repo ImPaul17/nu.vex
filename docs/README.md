@@ -6,6 +6,8 @@ Español es el idioma de entrada del proyecto. [English](en/README.md).
 | --- | --- |
 | Entender el producto y sus límites | [README](../README.md), [hoja de ruta](roadmap.md) |
 | Ver los cambios de interfaz | [Interfaz y varias instancias](interface.md) |
+| Usar o configurar canales de voz | [Voz](voice.md), [protocolo del servidor](voice-server.md) |
+| Consultar la investigación de Discord | [Análisis con REA](research/discord-voice.md) |
 | Abrir la web Alpha | [Despliegue Cloudflare](web-deployment.md) |
 | Operar el servidor del PC | [Instancia local de servicio](local-instance.md) |
 | Ejecutar mi servidor | [Autoalojamiento](self-hosting.md), [servidor](../apps/server/README.md) |

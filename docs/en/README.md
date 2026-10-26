@@ -14,7 +14,7 @@ The native desktop mediator still supports one connection per window; switching 
 
 ## Own-account Cloudflare deployment
 
-The Alpha client and API are live at [nuvex-alpha.pablomerino2008.workers.dev](https://nuvex-alpha.pablomerino2008.workers.dev). Public health and instance-information requests return **200**, and the tunnel readiness endpoint confirms active connectivity. The Worker version checked on 26 October 2026 is `dda0f992-3690-4022-8fd9-bb96da3d502c`. **All four public acceptance scenarios passed in Edge in 17.2 seconds.**
+The Alpha client and API are live at [nuvex-alpha.pablomerino2008.workers.dev](https://nuvex-alpha.pablomerino2008.workers.dev). Public health and instance-information requests return **200**, and the tunnel readiness endpoint confirms active connectivity. The current Worker version is `06f864db-46de-4283-bca5-a51161fb7450`, including voice. The initial four public service scenarios passed in Edge in 17.2 seconds; the subsequent two public voice scenarios passed in 10.4 seconds.
 
 Workers serves the static SvelteKit client. The `NUVEX_API` binding connects API and health requests to the `nuvex-central-api` HTTP VPC Service, targeting Axum at `127.0.0.1:3003` through the private `nuvex-central-pc` Tunnel. The connector is running; both public HTTP and WebSocket behavior have been checked. `wrangler.jsonc` records the deployment configuration.
 
@@ -34,7 +34,7 @@ An earlier public run passed history recovery and WebSocket revocation checks. A
 
 The final combined run passed **four of four public scenarios in Edge in 17.2 seconds** after `2367978` and the recorded Worker deployment. It covered registration/login, invitations and two accounts exchanging messages over WebSocket, history after reload, revocation and restoration/delayed-401 regressions.
 
-A real restart of the owned Axum process was also checked through the public API: the same session cookie recovered its account, membership and persisted message after a new process started. Axum is ready under runtime PID 6536; the tunnel PID 36044 remained active. Restart, restore and cleanup receipts remain local and private; credentials, cookies and access traces are not committed. Continuous operation across a full PC restart and Pablo's official account/community remain separate items. See the Spanish [deployment guide](../web-deployment.md), [local service guide](../local-instance.md), and the official [Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/) and [Workers VPC](https://developers.cloudflare.com/workers-vpc/get-started/) documentation.
+A real restart of the owned Axum process was also checked through the public API: the same session cookie recovered its account, membership and persisted message after a new process started. The tunnel remained active. After the voice upgrade, another backup with both migrations, four synthetic accounts and one message was restored successfully into a separate database. The four acceptance accounts were then removed using their exact UUIDs and relationship checks; the service is empty for initial registration. Runtime PIDs and restart, restore and cleanup receipts remain local and private; credentials, cookies and access traces are not committed. Continuous operation across a full PC restart and Pablo's official account/community remain separate items. See the Spanish [deployment guide](../web-deployment.md) and [local service guide](../local-instance.md).
 
 ## Development
 
@@ -54,7 +54,13 @@ Unit tests use node:test through tsx. Real-instance tests need a running backend
 
 ## Product milestones
 
-Planned capabilities include the official nu.vex community, direct/group messages, friend requests and blocking, custom roles and moderation, authorized attachment storage, WebRTC voice/video, external account providers, mobile apps, signed desktop updates, a community theme catalog and bot identities with scoped permissions. Federation is a separate protocol proposal, not a property of switching between independent instances.
+Web voice is now published in Alpha: up to eight participants using WebRTC audio, authenticated signaling, explicit microphone permission, self mute/deafen, input/output selection, and global/per-person playback volume. Calls remain active while using text channels. Leaving, switching instances, disconnecting, or losing access stops local capture. Participant revisions prevent delayed rosters from ending a newer call. See the Spanish [voice guide](../voice.md) and [server protocol](../voice-server.md).
+
+Two local voice scenarios passed in Edge in 7.8 seconds; the same two scenarios passed against the actual Cloudflare deployment in 10.4 seconds. Tests used synthetic microphone audio and verified inbound RTP packets in both clients, revocation, denied microphone permission, participant identity, UI channel creation, all three themes, and mobile width. Both clients ran on one PC. The native transport passed eleven unit tests; one native TLS integration test was explicitly skipped. A new desktop installer and physical microphone acceptance remain pending.
+
+Voice currently uses peer-to-peer mesh and Cloudflare STUN. A production TURN relay, SFU, distinct-network/device acceptance, push-to-talk, speaking detection, and dedicated voice moderation remain planned. [REA research](../research/discord-voice.md) records the bounded Discord artifact analysis and native disassembly with hashes and limitations; it does not establish complete product equivalence.
+
+Other planned capabilities include the official nu.vex community, direct/group messages, friend requests and blocking, custom roles and moderation, authorized attachment storage, video/screen sharing, external account providers, mobile apps, signed desktop updates, a community theme catalog and bot identities with scoped permissions. Federation is a separate protocol proposal, not a property of switching between independent instances.
 
 The update path for the Rust/Tauri app is a signed Tauri updater, not NuGet. Signing keys, release metadata and upgrade/recovery tests must exist before automatic installation is enabled.
 

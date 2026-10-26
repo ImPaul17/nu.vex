@@ -463,6 +463,7 @@ pub async fn logout(State(state): State<AppState>, auth: Auth) -> Result<Respons
         .bind(&auth.session_hash)
         .execute(&state.pool)
         .await?;
+    crate::voice::remove_session(&state, &auth.session_hash, "logout").await;
     state
         .tickets
         .lock()

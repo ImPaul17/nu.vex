@@ -151,6 +151,34 @@ pub async fn bootstrap(
 pub struct NameInput {
     name: String,
 }
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChannelInput {
+    name: String,
+    #[serde(default)]
+    kind: ChannelKind,
+}
+#[derive(Deserialize, Default, Clone, Copy)]
+#[serde(rename_all = "lowercase")]
+pub enum ChannelKind {
+    #[default]
+    Text,
+    Voice,
+}
+impl ChannelKind {
+    fn value(self) -> &'static str {
+        match self {
+            Self::Text => "text",
+            Self::Voice => "voice",
+        }
+    }
+    fn category(self) -> &'static str {
+        match self {
+            Self::Text => "COMUNIDAD",
+            Self::Voice => "VOZ",
+        }
+    }
+}
 #[derive(Serialize)]
 pub struct CommunityResponse {
     community: Community,
@@ -226,10 +254,11 @@ pub async fn create_channel(
     State(state): State<AppState>,
     auth: Auth,
     Path(id): Path<String>,
-    payload: Result<Json<NameInput>, axum::extract::rejection::JsonRejection>,
+    payload: Result<Json<ChannelInput>, axum::extract::rejection::JsonRejection>,
 ) -> Result<(StatusCode, Json<ChannelResponse>), ApiError> {
     let id = error::uuid(&id)?;
-    let name = channel_name(&error::json(payload)?.name)?;
+    let input = error::json(payload)?;
+    let name = channel_name(&input.name)?;
     require_owner(&state.pool, auth.user_id, id).await?;
     let mut tx = state.pool.begin().await?;
     sqlx::query("SELECT id FROM communities WHERE id=$1 FOR UPDATE")
@@ -245,7 +274,7 @@ pub async fn create_channel(
             "La comunidad admite hasta 200 canales en este MVP.",
         ));
     }
-    let inserted=sqlx::query_as("INSERT INTO channels(id,community_id,name) VALUES($1,$2,$3) RETURNING id,community_id,name,kind,category,description").bind(Uuid::new_v4()).bind(id).bind(name).fetch_one(&mut *tx).await;
+    let inserted=sqlx::query_as("INSERT INTO channels(id,community_id,name,kind,category) VALUES($1,$2,$3,$4,$5) RETURNING id,community_id,name,kind,category,description").bind(Uuid::new_v4()).bind(id).bind(name).bind(input.kind.value()).bind(input.kind.category()).fetch_one(&mut *tx).await;
     let channel = match inserted {
         Ok(channel) => channel,
         Err(error)
@@ -348,6 +377,7 @@ pub async fn remove_member(
         .rows_affected()
         > 0;
     if removed {
+        crate::voice::remove_member(&state, user_id, community_id).await;
         let _ = state.events.send(crate::realtime::Event::workspace(
             community_id,
             Some(user_id),

@@ -34,7 +34,8 @@ Las cuentas y el historial compartido necesitan un **servidor nu.vex**. Los inst
 | Temas, acento, transparencia, densidad, importar/exportar JSON | Implementado; preferencias locales sin scripts |
 | Servicio central Alpha | Desplegado en Cloudflare con API y PostgreSQL privados en el PC; comunidad oficial de Pablo pendiente de configurar |
 | Privados, amistades, roles personalizados y moderación avanzada | Planificados; aún no disponibles |
-| Voz, vídeo, subida y visualización de archivos compartidos | Planificados; la demo de adjuntos solo muestra metadatos |
+| Canales de voz | WebRTC Alpha hasta ocho personas; micrófono, escucha, dispositivos y volumen global/individual. [Guía de voz](docs/voice.md) |
+| Vídeo, subida y visualización de archivos compartidos | Planificados; la demo de adjuntos solo muestra metadatos |
 | Inicio con proveedores externos, varias cuentas de una misma instancia | Planificado |
 | Actualización automática de Windows, apps Android/iOS | Planificado; la web adaptable ya se puede usar en móvil |
 | Catálogo comunitario de temas, bots y federación | Planificado; las instancias actuales son independientes |
@@ -56,10 +57,11 @@ Para las cuentas reales necesitas PostgreSQL y el backend. Sigue [autoalojamient
 
 ```sh
 npm run check          # Svelte y TypeScript estricto
-npm test               # node:test mediante tsx, modelos y temas
+npm test               # Modelos, temas y privacidad del ciclo de voz
 npm run build          # Cliente de producción en apps/web/build
 npm run test:e2e        # Playwright: demo
 npm run test:instance   # Playwright: servidor real en ejecución
+npm run test:voice      # Audio sintético entre dos navegadores y permisos de voz
 ```
 
 En Windows, si no está instalado Chromium de Playwright, puedes usar Edge: `$env:PLAYWRIGHT_CHANNEL='msedge'`. [Pruebas y verificaciones](docs/testing.md) explica requisitos y resultados ejecutados.

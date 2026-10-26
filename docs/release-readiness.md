@@ -15,7 +15,8 @@
 | Escritorio | Instaladores Alpha previos; estos cambios aún no están empaquetados |
 | Actualización automática | Pendiente firma, metadatos y prueba de actualización/recuperación |
 | Android/iOS | Pendiente; existe web adaptable |
-| Privados, voz y archivos | Pendientes según hoja de ruta |
+| Voz web | Alpha hasta ocho personas; audio bidireccional comprobado localmente y por la API pública; TURN/SFU y redes físicas distintas pendientes |
+| Privados, vídeo y archivos | Pendientes según hoja de ruta |
 | Roles avanzados, bots y galería | Pendientes; permisos básicos no equivalen al sistema final |
 
 ## Antes de cada Alpha

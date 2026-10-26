@@ -13,7 +13,7 @@ export interface WorkspaceActions {
   loadEarlier(channelId: string, before: string): Promise<number>;
   send(channelId: string, content: string): Promise<void>;
   createCommunity(name: string): Promise<Community>;
-  createChannel(communityId: string, name: string): Promise<Channel>;
+  createChannel(communityId: string, name: string, kind?: 'text' | 'voice'): Promise<Channel>;
   createInvite(communityId: string): Promise<string>;
   joinInvite(code: string): Promise<void>;
   deleteMessage(message: Message): Promise<void>;

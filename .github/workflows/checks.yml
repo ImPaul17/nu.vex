@@ -71,6 +71,7 @@ jobs:
           curl --fail --silent --retry 30 --retry-connrefused --retry-delay 1 http://127.0.0.1:3001/health/ready
       - run: npx playwright install --with-deps chromium
       - run: npm run test:instance
+      - run: npm run test:voice
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

@@ -49,6 +49,8 @@ La comunidad oficial de Pablo sigue pendiente de configurar. Su diferencia será
 
 ## Extensiones previstas
 
-Archivos necesitarán almacenamiento autorizado y cuotas. Voz/vídeo necesitarán señalización, TURN y SFU. Bots tendrán identidades y permisos propios. Los temas comunitarios conservarán un formato declarativo. Las actualizaciones tendrán firmas verificables y canal Alpha.
+La voz Alpha usa una malla WebRTC de hasta ocho participantes. REST autentica la señalización y el WebSocket dirige señales a la sesión destinataria. Las participaciones son efímeras, con renovación y revisiones de lista que descartan eventos antiguos. El micrófono se libera antes de esperar a la red al abandonar. Consulta [el protocolo de voz](voice-server.md).
+
+Archivos necesitarán almacenamiento autorizado y cuotas. La voz aún requiere TURN de producción y un SFU para ampliar conectividad y grupos. Vídeo, bots, temas comunitarios y actualizaciones firmadas conservan sus hitos en la hoja de ruta.
 
 Cambiar entre instancias **no implementa federación**: hoy no hay comunicación entre sus servidores. La [hoja de ruta](roadmap.md) fija la aceptación de cada capacidad.
