@@ -1,17 +1,21 @@
-﻿name-template: "v$RESOLVED_VERSION-alpha.$BUILD_NUMBER"
-tag-template: "v$RESOLVED_VERSION-alpha.$BUILD_NUMBER"
+name-template: "v$RESOLVED_VERSION"
+tag-template: "v$RESOLVED_VERSION"
+version-template: "$MAJOR.$MINOR.$PATCH$PRERELEASE"
+prerelease: true
+prerelease-identifier: alpha
+latest: false
 categories:
-  - title: "🚀 Features"
+  - title: "🚀 Funciones"
     labels: ["feat", "feature"]
-  - title: "🐛 Bug Fixes"
+  - title: "🐛 Correcciones"
     labels: ["fix", "bug"]
-  - title: "📚 Documentation"
+  - title: "📚 Documentación"
     labels: ["docs", "documentation"]
-  - title: "🔧 Infrastructure"
+  - title: "🔧 Infraestructura"
     labels: ["chore", "ci", "build", "refactor"]
-  - title: "🔒 Security"
+  - title: "🔒 Seguridad"
     labels: ["security"]
-  - title: "⚡ Performance"
+  - title: "⚡ Rendimiento"
     labels: ["perf", "performance"]
 change-template: "- $TITLE @$AUTHOR (#$NUMBER)"
 version-resolver:
@@ -23,11 +27,11 @@ version-resolver:
     labels: ["patch", "fix", "bug", "docs", "chore", "refactor", "ci", "build", "perf", "security"]
   default: patch
 template: |
-  ## Changes
+  ## Cambios
 
   $CHANGES
 
   ---
   **Pre-release Alpha** - No usar en producción.
-  Ver [MASTER_PLAN.md](MASTER_PLAN.md) para roadmap completo.
+  Ver [la hoja de ruta](https://github.com/ImPaul17/nu.vex/blob/main/docs/roadmap.md).
   Creado por [Pablo](https://github.com/ImPaul17).

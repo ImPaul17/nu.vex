@@ -13,6 +13,7 @@
 | cargo build --locked del backend actual | Correcto, Rust 1.99.1 |
 | npm run web:export | Correcto; exportación Cloudflare, CSP por hash y seis pruebas de inventario de licencias |
 | npm run test:cloudflare | Ocho pruebas correctas del proxy |
+| actionlint 1.7.12 | Correcto para los workflows modificados de CI y Release Drafter; sin ShellCheck/Pyflakes |
 | Autenticación y publicación Cloudflare | Correctas; Worker `nuvex-alpha`, URL propia workers.dev |
 | Túnel privado y servicio Workers VPC | Creados, vinculados y disponibles; recorrido público comprobado |
 | Playwright contra la URL pública, con Edge | Cuatro escenarios correctos en 17,2 s después de corregir el acceso prematuro al registro |

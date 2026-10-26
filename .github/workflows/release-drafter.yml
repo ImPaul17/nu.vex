@@ -1,4 +1,4 @@
-﻿name: Release Drafter
+name: Release Drafter
 
 on:
   push:
@@ -27,6 +27,3 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           config-name: release-drafter.yml
-
----
-# Release Drafter Config (save as .github/release-drafter.yml)
