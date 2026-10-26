@@ -214,7 +214,6 @@
       } catch {
         /* Connecting still works without browser storage. */
       }
-      stage = "login";
       if (restore && (!candidate.crossOrigin || connectedAccounts[candidate.baseUrl])) {
         try {
           await enterWorkspace();
@@ -223,6 +222,8 @@
           else throw cause;
         }
       }
+      // No permitir elegir registro mientras un 401 de restauración aún puede cambiar la vista.
+      stage = "login";
     } catch (cause) {
       if (candidate && !sessions.has(candidate.baseUrl)) await candidate.dispose().catch(() => {});
       snapshot = null;

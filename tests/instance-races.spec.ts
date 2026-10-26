@@ -178,6 +178,28 @@ test('failed history during session restoration clears the unusable workspace an
   await expect(page.locator('.composer-caption')).toContainText('historial persistente');
 });
 
+test('initial restoration keeps account actions hidden until its delayed unauthorized response finishes', async ({ page }) => {
+  const held = await holdNextGet(page, (url) => url.pathname === '/api/v1/bootstrap');
+  try {
+    await page.goto('/');
+    const response = await held.captured;
+    expect(response.status).toBe(401);
+    await settleClient(page);
+    await expect(page.getByRole('button', { name: 'Crear una cuenta', exact: true })).toHaveCount(0, { timeout: 1_000 });
+    await expect(page.getByRole('button', { name: 'Iniciar sesión', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Buscando tu instancia…', exact: true })).toBeVisible();
+    await held.deliver();
+    await expect(page.getByRole('heading', { name: 'De vuelta con tu equipo.', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Crear una cuenta', exact: true }).click();
+    const displayName = page.getByLabel('Nombre visible', { exact: true });
+    await expect(displayName).toBeEnabled();
+    await displayName.fill('Registro después de restaurar');
+    await settleClient(page);
+    await expect(page.getByRole('heading', { name: 'Tu cuenta, en tu servidor.', exact: true })).toBeVisible();
+    await expect(displayName).toHaveValue('Registro después de restaurar');
+  } finally { await held.dispose(); }
+});
+
 test('a delayed private workspace response cannot replace a later authenticated account', async ({ page, context, browser, baseURL }) => {
   const first = await seedAccount(context, baseURL, 'first');
   const secondContext = await browser.newContext({ baseURL });
