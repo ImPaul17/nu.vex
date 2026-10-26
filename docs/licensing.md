@@ -1,21 +1,13 @@
-# Project license
+# Licencia y atribución
 
-The owner approved **Apache License 2.0** on 19 October 2026. The complete, unmodified official license text is in [LICENSE](../LICENSE); project attribution is in [NOTICE](../NOTICE). Package metadata uses the SPDX identifier `Apache-2.0`.
+[Inicio](../README.md) · [Referencia secundaria](en/original/docs/licensing.md)
 
-The license text was retrieved from the [Apache Software Foundation](https://www.apache.org/licenses/LICENSE-2.0.txt). Its SHA-256 in this workspace is `cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30`.
+El propietario aprobó **Apache-2.0** el 19 de octubre de 2026. El texto completo y sin modificar está en [LICENSE](../LICENSE); la atribución del proyecto está en [NOTICE](../NOTICE).
 
-Apache-2.0 was selected to support open collaboration and flexible reuse. Preserve the license and applicable attribution notices, and mark modifications as required by its terms. The license includes a contributor patent grant; it does not grant trademark rights. The complete license, rather than this summary, governs use.
+Creador y mantenedor: **Pablo / ImPaul17**. Conserva los avisos y marca las modificaciones según los términos de la licencia. Este resumen no sustituye el texto íntegro ni concede derechos sobre la marca.
 
-## Fonts, branding, and dependencies
+Geist y Geist Pixel conservan **SIL OFL 1.1**. Las dependencias mantienen sus licencias. Antes de distribuir binarios o contenedores incluye LICENSE, NOTICE, los avisos de terceros y las licencias de fuentes y dependencias nativas.
 
-Geist and Geist Pixel retain their **SIL Open Font License 1.1**, with the exact package notice bundled alongside their files. See [third-party notices](../THIRD_PARTY_NOTICES.md) and [font provenance](branding.md). Other dependencies retain their own licenses and notices.
+Los textos de licencia y comprobantes de procedencia se mantienen en su idioma original para preservar su integridad. La documentación explicativa es en español; [la referencia en inglés](en/README.md) es secundaria.
 
-Preserve the official nu.vex identity when using supplied artwork in this project. The project license and NOTICE do not grant trademark rights or permit a misleading claim of official endorsement. Do not replace attribution with an invented copyright owner.
-
-## Contributions and releases
-
-Contributions intentionally submitted for inclusion are handled under the Apache-2.0 contribution terms unless explicitly stated otherwise or covered by a separate agreement. No additional contributor agreement has been introduced. Contributors must have the rights to submit their code and assets and must identify third-party material.
-
-Before distributing binaries or containers, include LICENSE, NOTICE, required third-party notices, and the font license. License selection is complete; publication, signing, security support, and dependency review are separate [release requirements](release-readiness.md).
-
-The earlier phase 0/1 verification record predates approval and records the license as pending at that time. It is historical evidence, not the current license policy.
+El código abierto permite forks independientes; no implica permiso de escritura en el repositorio principal. Durante la Alpha el mantenimiento corresponde a Pablo. No existe un acuerdo adicional de contribución. Consulta [mantenimiento](repository-maintenance.md) y [publicación](release-readiness.md).

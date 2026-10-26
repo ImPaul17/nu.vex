@@ -1,24 +1,22 @@
-# Security
+# Seguridad
 
-## Current support status
+[English reference](docs/en/original/SECURITY.md)
 
-nu.vex is a pre-release communication platform. A Rust authentication/messaging service and deployment files are under development and verification; there is no supported stable production release or completed security audit. The explicit local demo is not a private or durable communication channel. No end-to-end encryption claim is made. See [release readiness](docs/release-readiness.md).
+nu.vex está en pre-release Alpha. No hay una versión estable con soporte de producción ni una auditoría de seguridad completada. La demo local no es un canal duradero o privado. No se afirma que exista cifrado de extremo a extremo.
 
-## Reporting a vulnerability
+## Comunicar una vulnerabilidad
 
-Use the repository's [private vulnerability reporting form](https://github.com/ImPaul17/nu.vex/security/advisories/new). Private vulnerability reporting was enabled and its enabled state verified through GitHub's API on 19 October 2026.
+Usa el [formulario privado del repositorio](https://github.com/ImPaul17/nu.vex/security/advisories/new), también accesible desde **Security → Report a vulnerability**. Si no está disponible, solicita al mantenedor un canal privado sin publicar la explotación.
 
-You can also open **Security → Report a vulnerability** in [ImPaul17/nu.vex](https://github.com/ImPaul17/nu.vex). If the form is unavailable, ask the maintainer for a private channel without disclosing the exploit publicly. Never send secrets, real user messages, or a database dump in a public issue. No security email address is published here.
+Incluye versión o commit, entorno, impacto y una reproducción mínima con datos sintéticos. No publiques credenciales, conversaciones reales ni copias de bases de datos en incidencias. No se publica una dirección de correo de seguridad ni se prometen plazos de respuesta.
 
-Include the affected version or commit, environment, impact, minimal reproduction using synthetic data, and any proposed fix. Coordinate disclosure with the maintainer. Acknowledgement and remediation deadlines have not yet been established; this file does not promise an unattended reporting service.
+## Criterios de implementación
 
-## Engineering boundaries
+- Valida temas, mensajes, archivos y direcciones como entradas no confiables.
+- No ejecutes scripts ni HTML aportado por usuarios.
+- Comprueba cada operación y evento con los permisos vigentes del servidor.
+- Mantén mínimas las capacidades nativas y las redes de proxy de confianza.
+- Conserva contraseñas y tokens fuera de Git, registros, URL y almacenamiento de preferencias.
+- Usa HTTPS en despliegues reales y prueba revocación, límites y restauración.
 
-- Treat imported themes, message content, files, URLs, and future plugin output as untrusted.
-- Restrict theme imports to validated data mapped to known tokens; do not evaluate scripts or inject arbitrary CSS/HTML.
-- Keep native capabilities explicit and minimal. Remote instance content must never inherit operating-system privileges.
-- For phase 2, authorize every server operation and WebSocket subscription using current membership and permissions. UI visibility is not an access control.
-- Keep credentials out of source, logs, URLs, browser theme exports, and build-time public variables.
-- Require secure transport in real deployments and document session revocation, request limits, backups, and updates before supporting production use.
-
-These boundaries guide the current implementation and future milestones. Executed functional tests are recorded in [current verification](docs/verification-current.md); they do not constitute a security audit or a production support commitment.
+El cambio entre instancias invalida solicitudes anteriores y limpia la vista antes de mostrar datos del destino. Cada sesión remota se conserva solo en memoria. Los [resultados funcionales](docs/verification-current.md) no sustituyen una auditoría de seguridad.

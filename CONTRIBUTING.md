@@ -1,71 +1,36 @@
-# Contributing to nu.vex
+# Contribuir y desarrollar nu.vex
 
-The main nu.vex repository is currently maintained solely by its owner,
-`ImPaul17`. External code contributions are not being accepted during this
-Alpha. The public source is available for use, modification and independent
-forks under [Apache-2.0](LICENSE); it does not grant write access to this
-repository or permission to create branches in it. Unsolicited pull requests
-may be closed without review. Security reports remain welcome through the
-[private reporting route](SECURITY.md).
+[English reference](docs/en/original/CONTRIBUTING.md)
 
-The instructions below document the owner's development workflow and help
-people build their own forks. Documentation may be in English or Spanish.
-The product name is always **nu.vex**; technical identifiers may use `nuvex`.
+Pablo / ImPaul17 mantiene el repositorio principal. Durante la Alpha no se aceptan contribuciones externas de código; se pueden desarrollar forks independientes bajo Apache-2.0. Los problemas de seguridad se comunican por [el canal privado](SECURITY.md).
 
-The [repository maintenance record](docs/repository-maintenance.md) documents
-the current access policy and protected-main checks.
+## Trabajar en el código
 
-## Before changing code
+Lee [arquitectura](docs/architecture.md) y [hoja de ruta](docs/roadmap.md). Usa una rama de trabajo; nunca hagas commits directamente en `main`. Conserva los cambios existentes y los archivos originales de marca.
 
-Read the [architecture](docs/architecture.md) and [roadmap](docs/roadmap.md), identify the current phase, and keep the change reviewable. Describe important API, data, permission, or dependency changes before implementation. Keep original supplied assets and existing work intact.
+El texto de producto y la documentación empiezan en español; las guías secundarias están en `docs/en`. El nombre de producto es **nu.vex**; los identificadores técnicos pueden usar `nuvex`.
 
-The project is an original implementation. Do not contribute proprietary source, extracted private APIs, third-party trademarks, or assets without permission. Include the origin and license of new dependencies and assets. The project uses [Apache-2.0](LICENSE); keep applicable [NOTICE](NOTICE) and [third-party notices](THIRD_PARTY_NOTICES.md). Do not introduce a separate contributor agreement without an explicit maintainer decision.
+Instala con `npx --yes npm@11.21.1 ci`. Mantén el gestor, versiones directas y archivo de dependencias bloqueadas. No añadas librerías, tareas o servicios sin una necesidad demostrada. No subas credenciales, `.env`, dependencias instaladas, compilaciones ni datos reales.
 
-## Development
+TypeScript es estricto; Svelte usa runas. La lógica compartida vive en `packages/core`; los temas, en `packages/tokens`. Los accesos a servidor se concentran en `InstanceApi`; los permisos se comprueban en Rust. Los temas son datos, nunca scripts o CSS arbitrario.
 
-Use the Node/npm versions documented in the [README](README.md). From the repository root:
-
-```sh
-npx --yes npm@11.21.1 ci
-npm run dev
-```
-
-Use the existing npm workspace layout and lockfile. Avoid adding a task runner, package manager, state library, or network service unless a demonstrated need justifies it. Do not commit `node_modules`, build output, `.env` secrets, credentials, or local IDE state.
-
-Use npm 11.21.1 for dependency installation, updates, and lockfile changes, including CI. `npx --yes npm@11.21.1` selects it without updating global npm. The declared supported range is npm `>=11.18 <12`; older versions can lose root overrides across workspace links. Keep exact direct versions and the lockfile together. Review the [version and override policy](docs/environment.md) before changing SvelteKit, Vite, Node requirements, or the temporary `cookie` override.
-
-Keep shared non-UI logic in `packages/core`, presentation tokens in `packages/tokens`, and reusable Svelte components in `apps/web/src/lib`. Place OS-specific integrations in `apps/desktop`. A component should receive typed data and emit an explicit action rather than opening an implicit backend or operating-system dependency.
-
-## Checks and tests
-
-Before submitting a change, run these commands from the root:
+## Verificación
 
 ```sh
 npm run check
 npm test
 npm run build
+npm run test:e2e
 ```
 
-`check` validates Svelte and TypeScript; `test` executes the automated unit suite; `build` creates the static production frontend. Review the actual output and report failures, warnings, and missing prerequisites. A frontend build does not verify Tauri, Docker, server security, or cross-platform installers.
+Para cambios de cuentas/mensajería, ejecuta también `npm run test:instance` contra una base de pruebas. La suite unitaria usa **node:test mediante tsx**, no Vitest. Consulta [pruebas](docs/testing.md).
 
-Run `npm run test:e2e` for frontend demo behavior changes after installing Chromium or selecting an existing supported browser. For service or real-account client changes, run `npm run test:server` against a dedicated migrated test database and `npm run test:instance` against the running test instance. These checks create synthetic data; keep production databases separate. See the [testing guide](docs/testing.md) for prerequisites, the Windows Edge option, current scenarios, and verification boundaries.
+Comprueba escritorio y móvil, teclado, foco al cerrar diálogos, mensajes largos, errores de importación y los tres temas. Adjunta capturas a las revisiones de interfaz. Un build web no demuestra que los instaladores o Docker funcionen.
 
-Test critical boundaries rather than reproducing component internals. Theme imports need invalid types, unexpected keys, excessive values, and malformed JSON coverage. Maintain backend coverage for authentication, authorization, transaction boundaries, reconnect behavior, and duplicate sends against a real test database with migrations. Keep native and container verification results separate; the hosted [CI run for `c0f8cda`](https://github.com/ImPaul17/nu.vex/actions/runs/39193801672) passed its deployment snapshot, rather than automatically certifying later changes or desktop runtime behavior.
+## Commits y revisiones
 
-For interface changes, manually verify:
+Usa mensajes convencionales: `feat:`, `fix:`, `docs:`, `refactor:` o `chore:`. Separa cambios funcionales de traducciones y mantenimiento. Explica el problema concreto, la conducta final, las pruebas y sus límites; enlaza documentación y capturas.
 
-1. Wide and narrow layouts, long channel names, and long messages.
-2. Keyboard-only navigation, visible focus, modal dismissal, and focus return.
-3. Screen-reader names for controls, readable contrast, and reduced-motion mode.
-4. Community/channel switching, local message sending, search, and empty states.
-5. Theme import failures, valid export/import, and a usable reset path.
+Todas las versiones siguen como pre-release y usan `v0.x.x-alpha.y`. No marques una publicación estable. No describas una simulación o datos locales como una función de servidor.
 
-The current unit suite is not a browser accessibility audit. Record which browser and viewport you actually checked. Add integration or end-to-end tooling when the behavior being delivered requires it.
-
-## Pull requests
-
-Explain the concrete problem, resulting behavior, and validation performed. Include screenshots when layout changes and document user-visible limits. Mark demo behavior explicitly; never describe local state as a functioning server feature.
-
-Use strict TypeScript, validate inputs at trust boundaries, preserve accessible labels and focus behavior, and respect reduced-motion preferences. Update the relevant docs when behavior or prerequisites change. Commit dependency lockfile changes together with their manifest change.
-
-Use the [security reporting instructions](SECURITY.md) for sensitive vulnerabilities rather than posting credentials or exploit details in a public issue.
+Conserva LICENSE, NOTICE y avisos aplicables de dependencias y recursos. No incluyas código o material de terceros sin derechos y procedencia.

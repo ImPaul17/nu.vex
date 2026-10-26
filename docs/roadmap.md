@@ -1,50 +1,57 @@
-# Roadmap and acceptance criteria
+# Hoja de ruta de nu.vex
 
-No dates or production readiness are implied. Each phase must be verified before the next adds substantial scope.
+[Inicio](../README.md) · [English](en/README.md) · [Referencia histórica completa](en/original/docs/roadmap.md)
 
-Current work has advanced from the initial frontend shell into the real-instance messaging implementation. Source/configuration now exist for the backend and Compose deployment. [Current verification](verification-current.md) records executed checks; [release readiness](release-readiness.md) tracks remaining deployment, browser, distribution, and publication work. The earlier [phase 0/1 check results](verification.md) apply to that historical snapshot. Apache-2.0 was subsequently approved and applied.
+Dirección de producto: Pablo / ImPaul17. Todas las versiones siguen siendo **pre-release Alpha**. Los estados describen código y pruebas, no fechas prometidas.
 
-## Phase 0 — Inspect and decide
+## 1. Un lugar sencillo para conversar
 
-Inventory the repository, toolchain, available Rea integration, and supplied assets. Record observations separately from proposed architecture. Establish workspace boundaries, contribution/security guidance, font/brand provenance, and an approved license. The owner has selected Apache-2.0.
+Cliente compartido entre web y Tauri: interfaz en español, texto legible, navegación por comunidades y canales, categorías plegables, miembros bajo demanda, búsqueda y modo concentración. Tres temas base, ajustes de acento y densidad, importación/exportación de preferencias sin código ejecutable.
 
-Acceptance: another contributor can identify what existed, what runs, which tools are missing or unverified, and which design decisions remain open. No proprietary implementation is used as a source dependency.
+Implementado en esta rama. Aceptación: navegar y enviar mensajes con teclado y móvil, no desbordar a 390 px, mantener legibilidad en bosque/medianoche/luz y conservar la apariencia al recargar. Los resultados se registran en [verificación de interfaz](interface.md).
 
-## Phase 1 — Design system and client shell
+## 2. Cuentas e instancias independientes
 
-Deliver shared tokens, official branding, readable typography, reusable glass surfaces, navigation, messages, members, search, responsive layout, theme controls, and an optional Tauri shell scaffold. Demo operations remain visibly labeled and separate from service-backed features.
+Ya existen registro, inicio/cierre de sesión, comunidades, canales de texto, invitaciones, PostgreSQL y WebSocket. Esta rama añade cambio entre sesiones de distintas instancias en memoria en web. El mediador de escritorio conserva una sola conexión por ventana. No enlaza identidades ni sincroniza servidores entre sí.
 
-Acceptance: the web client starts and builds from a lockfile; automated checks execute; a user can navigate, send an ephemeral demo message, and change/import/export supported appearance data. Keyboard focus, narrow layouts, reduced motion, and import errors are checked. Native builds are reported separately, with platform/toolchain limitations. This milestone does not satisfy the messaging MVP.
+Aceptación: dos usuarios intercambian mensajes y conservan historial al recargar; permisos comprobados en el servidor; reconexión sin envíos duplicados. Cambiar de instancia nunca mezcla mensajes ni credenciales y cerrar sesión solo revoca la cuenta actual.
 
-## Phase 2 — First real messaging MVP
+Pendiente: varios inicios de sesión en la misma instancia, recuperación de contraseña, verificación de correo y proveedores OIDC/OAuth. Requieren vinculación de identidades, revocación y pruebas de suplantación; no basta con añadir botones de proveedores.
 
-Implement the Rust/Axum service, PostgreSQL migrations, registration/login/logout, basic profiles, communities, text channels, owner/member permissions, message persistence, authenticated WebSocket events, and web-to-instance configuration. Provide a real backend Compose deployment with health checks, secrets documentation, and backup/restore instructions.
+## 3. Instancia oficial y acceso web
 
-The exit scenario is explicit:
+Publicar el cliente en una dirección provisional y mantener una exportación reproducible. El servidor central tendrá una base de datos y copias independientes, registro controlado y una comunidad administrada por Pablo. Una empresa podrá operar el mismo servidor en su infraestructura.
 
-1. Deploy a fresh instance on independently controlled infrastructure with a new database.
-2. Register two distinct users in independent browser sessions.
-3. Create a community and text channel, then admit the second user through a defined membership flow.
-4. Exchange messages in both directions without a page refresh.
-5. Restart the service and reload both clients; history remains visible in the correct order.
-6. Reconnect a dropped client; missed messages arrive without duplicate persisted sends.
-7. Remove a user's permission and verify that history, sends, and live subscriptions are denied by the server.
-8. Back up and restore to a separate database and verify accounts, memberships, and messages.
+Aceptación: HTTPS público, registro de dos personas desde redes distintas, acceso a la comunidad oficial mediante membresía, control administrativo, copia/restauración y reinicio probado. Se registrarán la dirección y el operador. Publicar archivos estáticos del cliente no cumple este hito.
 
-Also test invalid input, duplicate requests, expired/revoked sessions, unauthorized channel IDs, and bounded request/event sizes. A screenshot or single browser demo cannot substitute for this scenario.
+## 4. Amistades, privados y moderación
 
-## Phase 3 — Advanced communication
+Solicitudes de amistad con aceptar/rechazar/cancelar, bloqueo y preferencias de contacto. Privados y grupos con membresía explícita. Roles personalizados por comunidad y permisos sobre canales; expulsión, veto, silencios temporales y registro de acciones.
 
-Sequence direct messages and moderation before larger media scope. Add file attachments with storage quotas and validation, notification preferences, and user controls. Design and evaluate voice channels, video, and screen sharing through WebRTC, an SFU, and TURN/STUN.
+Orden: definir permisos y bloqueo; implementar almacenamiento y comprobación en el servidor; después habilitar la interfaz. Aceptación: pruebas de acceso ilegítimo a conversaciones e historial, revocación inmediata, límites contra spam y auditoría para la administración. Un rótulo de rol en un perfil no concede permisos.
 
-Acceptance is feature-specific: privacy and authorization tests for direct messages; upload/storage tests for attachments; delivery and preference tests for notifications; and real device/network tests for media permissions, reconnection, and group-call limits. Browser/PWA offline behavior requires its own cache and security design; a responsive website alone is not a finished PWA.
+## 5. Archivos y voz
 
-## Phase 4 — Open ecosystem and distribution
+Subida de archivos con cuotas y autorización por conversación; vistas seguras de texto, imágenes y vídeo; descarga con nombre y tipo controlados. Los documentos activos no se ejecutan dentro de la app. El almacenamiento debe admitir limpieza y copias junto con la base de datos.
 
-Build versioned bot/developer APIs, advanced theme tooling, and a capability-based plugin SDK. Prepare signed desktop releases with verified update metadata and reproducible build instructions. Evaluate Android/iOS and improved administration, migration, and data export tools.
+Voz y vídeo: señalización autenticada, WebRTC, TURN y un SFU para grupos; controles de micrófono, auriculares, silencio y salida. Compartir pantalla necesitará permiso explícito. Aceptación: dos dispositivos y redes distintas, reconexión, permisos de dispositivo y expulsión de usuarios sin acceso. Los canales de voz de la demo siguen siendo vistas informativas.
 
-Acceptance includes clean-install tests on Windows/macOS/Linux, upgrade/recovery tests, documented API compatibility, extension isolation tests, and platform-specific release checks. Public distribution also requires the approved project license, brand policy, dependency notices, and a working security contact.
+## 6. Windows y móvil
 
-Enterprise OIDC/SSO requires its own identity-provider, account-linking, authorization/group-mapping, logout/revocation, and security test milestone. Hosting a company-owned nu.vex instance with local accounts does not by itself implement enterprise SSO.
+Windows: comprobar versiones cuando haya conexión, mostrar un aviso discreto, descargar una actualización firmada, instalar con consentimiento y reabrir conservando los datos. Se usará el actualizador de Tauri; NuGet gestiona paquetes .NET y no es el mecanismo de distribución de esta app Rust/Tauri.
 
-Federation remains a separate proposal. It must first define identity, addressing, transport, moderation, abuse controls, deletion, and consistency semantics. No federation is assumed by the single-instance data model.
+Antes de habilitarlo: clave pública incorporada, clave privada en el gestor de secretos de publicación, metadatos por plataforma y canal Alpha, verificación de firmas y prueba de recuperación ante fallos. Las claves privadas nunca van en el repositorio.
+
+Móvil: primero la web adaptable; después PWA con política de caché de contenido privado y builds Android/iOS. Las tiendas, firma, permisos, notificaciones y pruebas en dispositivos son entregables propios. Una captura con ancho móvil no constituye una app nativa terminada.
+
+## 7. Temas y bots comunitarios
+
+Primero una galería declarativa y validación de formato, autoría, versión y compatibilidad. Después un espacio para subir, revisar, descubrir y reportar temas. Cualquier personalización futura con código requiere aislamiento y permisos; los temas actuales solo admiten JSON.
+
+Bots: identidades separadas de las cuentas personales, permisos mínimos, tokens revocables, límites, eventos versionados y revisión comunitaria. La especificación se discutirá en la comunidad antes de abrir el catálogo.
+
+## 8. Federación
+
+Propuesta independiente del uso de varios servidores desde un cliente. Necesita identidad y direccionamiento, confianza, consistencia, borrado, bloqueo, moderación y protección contra abuso. No se presupone federación en el modelo actual.
+
+Cada entrega tendrá un commit, pruebas ejecutadas, límites conocidos y notas de pre-release. Los comprobantes históricos permanecen accesibles desde [verificación](verification-current.md).

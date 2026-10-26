@@ -1,113 +1,52 @@
-# Architecture
+# Arquitectura
 
-Status: phase 0/1 foundation followed by phase 2 implementation, 19 October 2026. The backend and infrastructure source now exist; implementation, verification, and public release are tracked separately in [release readiness](release-readiness.md). Design requirements below do not by themselves certify that a service has passed them.
+[Inicio](../README.md) · [English](en/README.md) · [Diseño técnico anterior completo](en/original/docs/architecture.md)
 
-## Existing workspace and milestone boundary
-
-The initial workspace contained eight supplied brand files: `logo-app.svg`, `logo-app.png`, `logo-app.psd`, `logo-1.png`, `logo-1.psd`, `logo-2.png`, `logo-2.svg`, and `logo-2.psd`. No existing application, dependency manifest, or Git repository was present. Node 22.14.0 and npm 11.4.2 were available; Rust/Cargo and Docker were not exposed on `PATH`. Absence from `PATH` does not prove a tool is absent from the machine.
-
-The initial implementation added a typed frontend and native shell scaffold. That explicit demo remains ephemeral and separate from real service-backed data. Subsequent work adds instance-owned accounts, PostgreSQL persistence, REST/WebSocket transport, and deployment files; the initial verification record remains historical.
-
-The [environment inventory](environment.md) records the actual Rea integration and toolchain limits. The [branding record](branding.md) records asset inspection, exact frontend copies, and vendored font provenance.
-
-## Repository boundaries
-
-| Location | Responsibility | Status |
-| --- | --- | --- |
-| `apps/web` | SvelteKit/Svelte 5 client, routes, reusable UI, instance connection | Current integration milestone |
-| `apps/desktop` | Tauri 2 host with a restricted Rust instance transport and explicit native capabilities | Release compilation passed on Windows/macOS/Linux; real Windows/Linux debug UI/instance acceptance passed; macOS runtime and distribution checks remain separate |
-| `packages/core` | Framework-independent models, demo fixtures, validated theme data | Phase 1 |
-| `packages/tokens` | CSS variables, themes, density and glass foundations | Phase 1 |
-| `docs` | Design choices, roadmap, operational instructions | Phase 0/1 |
-| `apps/server` | Rust/Axum service with modules and SQL migrations | Phase 2 implementation; independent Cargo crate |
-| `infra` | Compose, explicit migrator, proxy and recovery helpers | Images, Compose, browser messaging, and recovery verified on Linux CI; production HTTPS remains a separate gate |
-
-Use npm workspaces with one JavaScript lockfile. The server is an independent Cargo workspace/crate; extract a broader Rust workspace if more Rust services need it. Extract more shared packages when they have a real second consumer.
-
-## Decisions with meaningful tradeoffs
-
-**One static client for web and desktop.** SvelteKit with `adapter-static` gives the web and Tauri wrapper the same frontend. SvelteKit server routes are intentionally not used for the backend. The tradeoff is that server rendering, secret handling, and authorization must live elsewhere. This follows the [Tauri SvelteKit integration model](https://v2.tauri.app/start/frontend/sveltekit/); the [SvelteKit adapter documentation](https://svelte.dev/docs/kit/adapter-static) explains static output.
-
-**Tauri 2 instead of Electron.** Keep a small, explicit native surface while reusing the web UI. Tauri depends on platform webviews and native build prerequisites, so rendering and packaging need tests on all supported operating systems. Electron would offer a bundled browser and a JavaScript main process at the cost of another runtime and a different privilege boundary. Native instance transport is implemented; additional OS integrations remain deferred until needed.
-
-**Rust/Axum modular monolith instead of microservices.** A single service with identity, communities, channels, messaging, and permission modules keeps transactional changes and self-hosting manageable. A Node backend would reduce the number of languages; Rust is recommended because it matches the preferred stack and future native work. It adds a toolchain and learning cost. This decision does not justify generating an untested server in phase 1.
-
-**PostgreSQL as the first durable store.** Use explicit migrations and transactions for membership and messages. SQLite could simplify a single-user development install, but supporting two SQL dialects would add migration and concurrency complexity before the multiuser MVP exists. Do not introduce Redis until measurements or multiple service replicas require shared ephemeral state. Add S3-compatible storage with attachments, not before.
-
-**REST plus WebSocket events.** REST handles authenticated queries and mutations; WebSocket distributes committed events. Starting with one mutation path reduces duplicate business logic. SSE is a reasonable receive-only alternative; WebSocket is preferred for eventual presence and signaling. Neither protocol creates durability by itself.
-
-**Native packaging and backend containers are separate.** Docker runs the instance infrastructure. Tauri bundles the client for each operating system. A web container, if provided for preview, does not constitute a messaging server.
-
-## Instance topology
+nu.vex es un cliente compartido y un servidor independiente por instancia. Creado y dirigido por Pablo / ImPaul17.
 
 ```mermaid
 flowchart LR
-  Web[Web client] --> Proxy[HTTPS reverse proxy]
-  Desktop[Tauri client] --> Proxy
-  Proxy --> Static[Static web assets]
-  Proxy --> API[Rust / Axum\nREST + WebSocket]
-  API --> DB[(PostgreSQL)]
+  W[Web y navegador móvil] -->|REST y WebSocket| I[Instancia elegida: Rust / Axum]
+  D[Escritorio Tauri] --> T[Transporte Rust restringido]
+  T -->|HTTPS / WSS| I
+  I --> P[(PostgreSQL)]
+  W --> L[Preferencias y direcciones locales]
 ```
 
-Each instance owns its accounts, communities, and database. No central account provider or nu.vex-operated service is required. Configure the instance URL rather than hardcoding a public endpoint. Cross-instance federation is out of scope until identity, addressing, trust, moderation, and synchronization have a written protocol.
+## Cliente compartido
 
-A corporate deployment means an independently operated nu.vex service and domain. Existing corporate identities need a separate OIDC/SSO integration; an arbitrary company's website is not an instance API. The production web container defaults to same-origin connections. A validated build-time `NUVEX_CONNECT_ORIGINS` list can permit selected external API/WebSocket origins; the destination must separately trust this frontend's exact origin. Scripts remain local. The native client selects an instance through the restricted Rust transport described below, without granting broad webview networking.
+`apps/web` usa SvelteKit, Svelte 5 y TypeScript estricto. La ruta `/` conecta con instancias reales; `/demo` usa datos efímeros de `packages/core`. `ChatShell.svelte` presenta comunidades, canales y mensajes; `InstanceApi` concentra validación de datos y operaciones del servidor. Los temas comparten variables de `packages/tokens` y solo admiten preferencias JSON validadas.
 
-The implemented server configuration uses `NUVEX_DATABASE_URL`, `NUVEX_BIND`, one exact `NUVEX_ALLOWED_ORIGIN`, and explicit boolean flags for insecure loopback development, registration, and startup migrations. Compose runs a separate `--migrate` service before the runtime, with automatic runtime migrations disabled. PostgreSQL advisory migration locking prevents concurrent migration application. Native and container migration/restart acceptance have passed. The [self-hosting guide](self-hosting.md) documents operational files and defaults, and [current verification](verification-current.md) records the executed checks and deployment limits.
+El escritorio incorpora el mismo cliente en Tauri 2. El transporte nativo restringe destinos y operaciones, verifica TLS y conserva tokens en memoria Rust. La [decisión ADR 0001](adr/0001-native-instance-transport.md) conserva el razonamiento del diseño.
 
-Suggested server modules are `identity`, `communities`, `channels`, `messages`, `permissions`, `events`, and `config`. Keep transport handlers thin; domain operations own authorization and transaction boundaries. A shared API schema should eventually generate or validate TypeScript wire types; the current demo models are not that schema.
+## Ciclo de vida de varias instancias
 
-### Data and event invariants
+En web, la ruta de acceso mantiene un máximo de seis conexiones durante la ejecución. El mediador de escritorio conserva una sola conexión por ventana y exige un nuevo inicio de sesión al cambiar. Cada conexión conserva sus propias credenciales. Al cambiar se cierra la suscripción activa, se invalida el trabajo pendiente de la sesión anterior y se obtiene de nuevo la cuenta, las comunidades y el historial del destino. Los mensajes anteriores se descartan del estado visible antes de cargar el siguiente servidor.
 
-Initial tables should cover users, sessions, communities, memberships, channels, messages, roles, and role assignments. Use server-assigned stable IDs, UTC timestamps, foreign keys, bounded text fields, and cursor pagination. Store password hashes and session-token hashes, never plaintext credentials. Record migration order and apply migrations explicitly during deployment.
+Solo hay una suscripción activa a la vez. Volver a una instancia recupera los eventos mediante el arranque de su espacio y la reconciliación del historial. No se reciben notificaciones en segundo plano de todas las instancias. Las credenciales remotas desaparecen al recargar; no se exportan junto con preferencias o direcciones.
 
-For a send operation: authenticate, authorize current channel membership, validate input, persist in a transaction, then publish the committed event. A client request identifier should make retries idempotent. Reconnecting clients fetch missed history using a server-defined cursor and reconcile duplicate event IDs. Slow subscribers need bounded buffers and explicit reconnect behavior. A transactional outbox is a candidate if delivery guarantees require it; it is not assumed in the current client.
+Las direcciones recientes se validan y normalizan: HTTPS, HTTP solo local, sin credenciales, rutas, consultas ni fragmentos. Se guardan nombre, origen y fecha de uso. Una entrada dañada no bloquea las demás.
 
-Phase 2 permissions should start with owner/member roles and named capabilities such as reading, sending, managing channels, and managing members. Enforce capabilities in the service for reads, writes, and subscriptions; revoke access on membership changes. Complex channel overrides and deny precedence need a separate design and tests before adoption.
+## Cuenta y autorización
 
-The current MVP's member list is the union of users visible through your joined communities, rather than a separate roster/presence view for the selected community. Display role labels are therefore contextual hints, not an authorization decision. Server operations must continue to check the actual target community/channel; scoped rosters and live presence remain follow-up work.
+Una cuenta pertenece a una instancia. El servidor registra y autentica con correo/contraseña, sesiones revocables e invitaciones. El propietario crea canales e invitaciones. Un miembro puede leer y enviar en sus comunidades y eliminar sus propios mensajes. La autorización se comprueba en Rust y PostgreSQL.
 
-### Identity and trust
+El navegador usa cookie en el mismo origen y token en memoria para instancias externas. CORS y la política de conexión del despliegue deben permitir el origen concreto. Tauri gestiona credenciales en su transporte nativo. Nunca se guardan contraseñas ni tokens en `localStorage`.
 
-For the same-origin web deployment, prefer opaque revocable sessions in secure, HttpOnly cookies. Define CSRF protection, allowed origins, WebSocket handshake validation, expiry, password hashing parameters, login limits, and logout/revocation before writing the authentication flow. Do not put bearer credentials in `localStorage`.
+No hay todavía inicio con Discord u otros proveedores, vinculación entre cuentas, privados, amistades, roles personalizados ni un inicio global de Nuvex. Tendrán permisos y revocación propios.
 
-The current client/server integration supports same-origin cookies and a distinct cross-origin bearer transport. Bearer credentials remain in client memory and require login after reload; they are not saved as appearance settings. WebSocket bearer access uses a short-lived single-use ticket rather than putting a long-lived access token in a URL. Native REST/restart checks and the local real-instance browser suite have exercised these transports, including bearer login, memory-only credentials, reload behavior, and logout revocation; see [current verification](verification-current.md) for the executed evidence and its limits. The production web image permits same-origin connections by default and accepts selected external destinations only through its validated build-time allowlist.
+## Persistencia y tiempo real
 
-The accepted [native transport ADR](adr/0001-native-instance-transport.md) adds a narrow Rust mediator for a selected instance per authorized local window. The webview uses typed IPC rather than broad HTTPS/WSS grants; Rust holds tokens only in memory, validates routes/bodies, verifies TLS, disables redirects, bounds events, and rejects stale generations. A Rust-owned nonce rotates on document reload/reset; selection checks that nonce and its order atomically, preventing queued work from a previous document from replacing the new connection. No keychain or persisted native credential feature is introduced. The pure `apps/desktop/transport` crate owns the policy and `src-tauri` binds it to the actual window and custom permissions.
+Axum y PostgreSQL mantienen el historial con orden estable y paginación por cursor. Los envíos incluyen un identificador de cliente para tolerar reintentos sin duplicar mensajes persistidos. Los eventos WebSocket usan tickets de corta duración y se reconcilian después de reconectar. El cliente protege la vista frente a respuestas tardías, sesiones sustituidas y mensajes ya borrados.
 
-Native requests do not invent a browser Origin. Originless mutations require explicit validated Bearer credentials without Cookie; login/registration additionally require JSON and explicit bearer transport. Native realtime tickets have a server-derived audience distinct from browser-origin tickets, and the native WebSocket carries only the short-lived ticket without Origin/Cookie/Authorization. Any present Origin must match exactly; empty/duplicate values cannot become the native absence case. Reverse proxies must preserve those headers or reject invalid input. Release native connections require HTTPS; debug builds permit HTTP loopback only.
+## Instancia oficial y autoalojamiento
 
-For source `7f9f459`, [three-platform native compilation](https://github.com/ImPaul17/nu.vex/actions/runs/39202625762), [Windows/Linux native UI acceptance](https://github.com/ImPaul17/nu.vex/actions/runs/39202625822), [messaging/deployment](https://github.com/ImPaul17/nu.vex/actions/runs/39202625795) and [production-policy HTTPS/WSS acceptance](https://github.com/ImPaul17/nu.vex/actions/runs/39202625770) passed all eleven jobs. Both UI jobs used real bundled debug binaries, two independent PostgreSQL-backed instances and eight integrated groups. The separate TLS jobs called the actual production-policy Rust transport and each passed fourteen certificate, messaging and redirect cases; they do not exercise a webview. The source was merged as `683a874` with an identical complete tracked snapshot. Public-domain operation, macOS interactive runtime, installers, signing and updates remain separate; see [current verification](verification-current.md).
+La instancia oficial ejecutará el mismo servidor que las instalaciones independientes. Su diferencia será operativa: administración, admisión a la comunidad, cuotas, copias y moderación. Requiere infraestructura persistente. La exportación estática del cliente no incluye PostgreSQL ni ejecuta Axum.
 
-A build-only hook inventories actual rendered frontend dependencies and final JS/CSS digests, then validates exact reviewed license copies in static output. Unknown rendered code or notice drift fails the build. These assets are shared by web and desktop; the separate native Rust/platform distribution inventory remains a later gate. See [third-party notices](../THIRD_PARTY_NOTICES.md).
+`compose.yaml` integra web, proxy, backend, migraciones y base privada. `infra` proporciona CSP y herramientas de copia/restauración. Claves, contraseñas y configuración se suministran por entorno. Consulta [autoalojamiento](self-hosting.md).
 
-### Customization and extensions
+## Extensiones previstas
 
-CSS variables own colors, surfaces, opacity, blur, radius, density, and typography. Components consume semantic tokens rather than embedding a theme. The current UI uses readable Geist for body text and headings; pixel geometry remains in the original branding assets. Keep font license notices with distributed font files and preserve official logo proportions, colors, transparency, and pixel geometry.
+Archivos necesitarán almacenamiento autorizado y cuotas. Voz/vídeo necesitarán señalización, TURN y SFU. Bots tendrán identidades y permisos propios. Los temas comunitarios conservarán un formato declarativo. Las actualizaciones tendrán firmas verificables y canal Alpha.
 
-Imported themes are versioned JSON containing only recognized settings and bounded values. A theme is data, not executable CSS, HTML, JavaScript, remote fonts, or a plugin. Unknown fields must not become arbitrary style properties. Imported palettes still require contrast review; syntactic validation alone cannot guarantee accessibility.
-
-The current format is limited to 16 KiB of UTF-8 JSON. All six fields are required; unknown fields are rejected:
-
-```json
-{
-  "version": 1,
-  "theme": "emerald",
-  "accent": "#14D392",
-  "glass": 0.78,
-  "radius": 16,
-  "density": "comfortable"
-}
-```
-
-`theme` accepts `emerald`, `midnight`, or `light`; `accent` is a six-digit hexadecimal color; `glass` is a finite number from 0 to 1; `radius` is a finite number from 4 to 24; and `density` accepts `comfortable` or `compact`. The parser returns a fresh object of recognized primitive values. Later format versions need explicit migration or a clear rejection, rather than silently interpreting new executable content.
-
-Future plugins need a capability protocol, isolated execution context, explicit user grants, versioning, revocation, and a minimal message API. A sandbox must not expose session credentials, the application DOM, arbitrary filesystem/network access, or Tauri commands by default. Bots should use revocable server tokens with narrow permissions. No plugin loader or SDK is delivered now.
-
-### Media and larger deployments
-
-Defer WebRTC until text messaging is durable and permissioned. A media milestone must select an SFU and design secure signaling, TURN/STUN deployment, room authorization, device consent, and bandwidth limits. Compare a mature independently deployable SFU with building one in Rust before committing; maintaining a custom SFU carries a substantially larger operational and interoperability burden. Do not imply transport encryption is end-to-end encryption.
-
-## Verification strategy
-
-Frontend checks cover strict types, boundary unit tests, static output and distribution notices. The implemented service has migrated PostgreSQL integration, authorization/reconnect, two-user restart and backup-restoration acceptance. Actual Windows/Linux native UI tests and production-policy TLS tests complement three-platform compilation. Manually review responsive layout, keyboard focus, themes and reduced motion. The [roadmap](roadmap.md) and [release ledger](release-readiness.md) distinguish these completed receipts from remaining packaging, public deployment and production-support checks.
+Cambiar entre instancias **no implementa federación**: hoy no hay comunicación entre sus servidores. La [hoja de ruta](roadmap.md) fija la aceptación de cada capacidad.

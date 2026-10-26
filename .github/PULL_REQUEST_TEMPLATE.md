@@ -1,9 +1,12 @@
-Describe the concrete problem and resulting behavior. Mention whether the change affects real instances, the explicit demo, or both.
+Describe el problema concreto y el comportamiento final. Indica si afecta a instancias reales, a la demo o a ambas.
 
-Validation performed:
+Verificación realizada:
 
-- Commands actually executed and their results:
-- Browser/platform scenarios checked, with screenshots if useful:
-- Missing prerequisites or remaining limitations:
+- Comandos ejecutados y resultados:
+- Navegadores, sistemas y escenarios comprobados:
+- Capturas de escritorio/móvil y temas:
+- Requisitos ausentes o límites pendientes:
 
-Document API/data/configuration changes, migrations, and operational impact where relevant. Preserve LICENSE/NOTICE and identify any new third-party code or assets. Use SECURITY.md for sensitive vulnerability details.
+Documenta cambios de contrato, datos, configuración y operación. Conserva LICENSE/NOTICE e identifica código o recursos de terceros añadidos. Usa SECURITY.md para comunicar vulnerabilidades.
+
+Español como idioma principal; referencia secundaria en inglés cuando corresponda. Todas las releases continúan como pre-release Alpha.
